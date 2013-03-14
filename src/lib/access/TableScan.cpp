@@ -7,6 +7,7 @@
 #include "storage/AbstractTable.h"
 #include "storage/PointerCalculator.h"
 #include "storage/PointerCalculatorFactory.h"
+#include "storage/TableRangeView.h"
 #include "helper/types.h"
 
 namespace hyrise { namespace access {
@@ -17,11 +18,26 @@ TableScan::TableScan(std::unique_ptr<AbstractExpression> expr) : _expr(std::move
 
 void TableScan::setupPlanOperation() {
   const auto& table = getInputTable();
-  _expr->walk({table});
+  auto tablerange = std::dynamic_pointer_cast<const TableRangeView>(table);
+  if(tablerange)
+    _expr->walk({tablerange->getActualTable()});
+  else
+    _expr->walk({table});
 }
 
 void TableScan::executePlanOperation() {
-  pos_list_t* positions = _expr->match(0, getInputTable()->size());
+  size_t start, stop;
+  const auto& tablerange = std::dynamic_pointer_cast<const TableRangeView>(getInputTable());
+  if(tablerange){
+    start = tablerange->getStart();
+    stop = start + tablerange->size();
+  }
+  else{
+    start = 0;
+    stop = getInputTable()->size();
+  }
+
+  pos_list_t* positions = _expr->match(start, stop);
   addResult(PointerCalculatorFactory::createPointerCalculatorNonRef(getInputTable(), nullptr, positions));
 }
 
