@@ -12,7 +12,6 @@
 #include "access/ResponseTask.h"
 #include "access/PlanOperation.h"
 #include "access/QueryTransformationEngine.h"
-#include "helper/epoch.h"
 #include "helper/HttpHelper.h"
 #include "helper/PapiTracer.h"
 #include "helper/sha1.h"
@@ -68,8 +67,6 @@ void RequestParseTask::operator()() {
 
   OutputTask::performance_vector& performance_data = _responseTask->getPerformanceData();
   performance_data.resize(1); // make room for at leas *this* operator
-  
-  epoch_t queryStart = get_epoch_nanoseconds();
   std::vector<std::shared_ptr<Task> > tasks;
 
   if (_connection->hasBody()) {
@@ -145,8 +142,8 @@ void RequestParseTask::operator()() {
     scheduler->schedule(task);
   }
 
-  performance_data[0] = { 0, 0, "NO_PAPI", "RequestParseTask", "requestParse", queryStart, get_epoch_nanoseconds(), boost::lexical_cast<std::string>(std::this_thread::get_id()) };
-  _responseTask->setQueryStart(queryStart);
+  performance_data[0] = { 0, 0, "NO_PAPI", "RequestParseTask", "requestParse", _queryStart, get_epoch_nanoseconds(), boost::lexical_cast<std::string>(std::this_thread::get_id()) };
+  _responseTask->setQueryStart(_queryStart);
   scheduler->schedule(_responseTask);
   _responseTask.reset();  // yield responsibility
 }

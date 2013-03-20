@@ -7,9 +7,11 @@
 #include <string.h>
 #include <stddef.h>
 #include <ctime>
+#include <memory>
 
 #include "net/Router.h"
 #include "taskscheduler/SharedScheduler.h"
+#include "access/RequestParseTask.h"
 
 namespace hyrise {
 namespace net {
@@ -74,6 +76,9 @@ void request_complete(ebb_request *request) {
   task->setPreferredCore(0);
   // give RequestParseTask high priority
   task->setPriority(1);
+  if (auto task2 = std::dynamic_pointer_cast<hyrise::access::RequestParseTask>(task)){
+    task2->setQueryStart();
+  }
   SharedScheduler::getInstance().getScheduler()->schedule(task);
 }
 

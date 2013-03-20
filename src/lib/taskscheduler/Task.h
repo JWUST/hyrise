@@ -45,7 +45,7 @@ public:
 class Task : public TaskDoneObserver, public std::enable_shared_from_this<Task> {
 
 public:
-  static const int DEFAULT_PRIORITY = 999;
+  static const int DEFAULT_PRIORITY = 0;
 protected:
   std::vector<std::shared_ptr<Task> > _dependencies;
   std::vector<TaskReadyObserver *> _readyObservers;
@@ -138,11 +138,11 @@ public:
   }
 };
 
-class CompareTask {
+class CompareTaskPtr {
     public:
-    bool operator()(Task& t1, Task& t2) // Returns true if t1 is higher priority than t2
+    bool operator()(const std::shared_ptr<Task> & t1, const std::shared_ptr<Task> & t2) // Returns true if t1 is higher priority than t2
     {
-       if (t1.getPriority() < t2.getPriority()) return true;
+       if (t1->getPriority() > t2->getPriority()) return true;
        else
          return false;
     };

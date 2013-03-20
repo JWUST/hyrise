@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 
 
   //Bind the program to the first NUMA node for schedulers that have core bound threads
-  if(!(scheduler_name == "CentralScheduler"))
+  if((scheduler_name == "WSSimpleTaskScheduler") || (scheduler_name == "SimpleTaskScheduler"))
     bindToNode(0);
 
   // Log File Configuration
