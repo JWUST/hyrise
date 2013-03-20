@@ -72,6 +72,8 @@ void request_complete(ebb_request *request) {
   std::shared_ptr<Task> task = handler_factory->create(connection_data);
   // Always map the first task to the first core
   task->setPreferredCore(0);
+  // give RequestParseTask high priority
+  task->setPriority(1);
   SharedScheduler::getInstance().getScheduler()->schedule(task);
 }
 

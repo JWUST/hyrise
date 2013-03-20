@@ -83,6 +83,12 @@ void RequestParseTask::operator()() {
       LOG4CXX_DEBUG(_query_logger, request_data);
       std::string final_hash = hash(request_data);
       std::shared_ptr<Task> result = nullptr;
+      int priority;
+      if(request_data.isMember("priority"))
+        priority = request_data["priority"].asInt();
+      else
+        priority = Task::DEFAULT_PRIORITY;
+      _responseTask->setPriority(priority);
       try {
         tasks = QueryParser::instance().deserialize(
                   QueryTransformationEngine::getInstance()->transform(request_data),
@@ -110,6 +116,7 @@ void RequestParseTask::operator()() {
       size_t i = 1;
       for (const auto & func: tasks) {
         if (auto task = std::dynamic_pointer_cast<_PlanOperation>(func)) {
+          task->setPriority(priority);
           task->setPlanId(final_hash);
           task->setTransactionId(tid);
           task->setPerformanceData(&(performance_data.at(i++)));
