@@ -134,6 +134,9 @@ void GroupByScan::splitInput() {
     else
       input.setHash(std::dynamic_pointer_cast<const AggregateHashTable>(hashTables[0])->view(first, last), 0);
   }
+  else if(_count > 0 && hashTables.empty()){
+    _PlanOperation::splitInput();
+  }
 }
 
 void GroupByScan::writeGroupResult(storage::atable_ptr_t &resultTab,
