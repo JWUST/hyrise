@@ -11,7 +11,8 @@
 #include "storage/AbstractTable.h"
 #include "storage/MutableVerticalTable.h"
 
-class PointerCalculator : public AbstractTable {
+class PointerCalculator : public AbstractTable,
+                          public std::enable_shared_from_this<PointerCalculator> {
 private:
   hyrise::storage::c_atable_ptr_t table;
   pos_list_t *pos_list;
@@ -26,9 +27,9 @@ protected:
   void updateFieldMapping();
 
 public:
-
   PointerCalculator(hyrise::storage::c_atable_ptr_t t, pos_list_t *pos = nullptr, field_list_t *f = nullptr);
-
+  PointerCalculator(const PointerCalculator& other);
+  
   virtual ~PointerCalculator();
 
   virtual  hyrise::storage::atable_ptr_t copy() const;
@@ -83,7 +84,7 @@ public:
 
   pos_list_t getActualTablePositions() const;
 
-  virtual  hyrise::storage::atable_ptr_t copy_structure(const field_list_t *fields = nullptr, const bool reuse_dict = false, const size_t initial_size = 0, const bool with_containers = true) const;
+  virtual  hyrise::storage::atable_ptr_t copy_structure(const field_list_t *fields = nullptr, const bool reuse_dict = false, const size_t initial_size = 0, const bool with_containers = true, const bool compressed = false) const;
 
 
   std::shared_ptr<PointerCalculator> intersect(const std::shared_ptr<const PointerCalculator>& other) const;
@@ -92,7 +93,9 @@ public:
 
   typedef std::vector<std::shared_ptr<const PointerCalculator> > pc_vector;
   static std::shared_ptr<const PointerCalculator> unite_many(pc_vector::const_iterator it, pc_vector::const_iterator it_end);
-  static std::shared_ptr<const PointerCalculator> concatenate_many(pc_vector::const_iterator it, pc_vector::const_iterator it_end);
+  static std::shared_ptr<PointerCalculator> concatenate_many(pc_vector::const_iterator it, pc_vector::const_iterator it_end);
+
+  virtual void debugStructure(size_t level=0) const;
 };
 
 #endif  // SRC_LIB_STORAGE_POINTERCALCULATOR_H_

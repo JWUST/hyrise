@@ -29,6 +29,7 @@ public:
   virtual ~TableRangeView();
 
   size_t getStart() const;
+  hyrise::storage::c_atable_ptr_t getTable() const;
   // specific to TableRangeView
   table_id_t subtableCount() const;
   hyrise::storage::atable_ptr_t copy() const;
@@ -56,6 +57,8 @@ public:
   DataType typeOfColumn(const size_t column) const;
   size_t columnCount() const;
   std::string nameOfColumn(const size_t column) const;
+
+  virtual void debugStructure(size_t level=0) const;
 };
 
 #endif /* TABLERANGEVIEW_H_ */
