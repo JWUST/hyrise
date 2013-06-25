@@ -32,7 +32,8 @@ bool registered = net::Router::registerRoute<RequestParseTask>(
 
 RequestParseTask::RequestParseTask(net::AbstractConnection* connection)
     : _connection(connection),
-      _responseTask(std::make_shared<ResponseTask>(connection)) {}
+      _responseTask(std::make_shared<ResponseTask>(connection)),
+      _queryStart(get_epoch_nanoseconds()) {}
 
 RequestParseTask::~RequestParseTask() {}
 
@@ -71,7 +72,6 @@ void RequestParseTask::operator()() {
 
   // the performance attribute for this operation (at [0])
   performance_data.push_back(std::unique_ptr<OutputTask::performance_attributes_t>(new OutputTask::performance_attributes_t));
-  epoch_t queryStart = get_epoch_nanoseconds();
   std::vector<std::shared_ptr<Task> > tasks;
 
   if (_connection->hasBody()) {
@@ -143,8 +143,8 @@ void RequestParseTask::operator()() {
     scheduler->schedule(task);
   }
 
-  *(performance_data.at(0)) = { 0, 0, "NO_PAPI", "RequestParseTask", "requestParse", queryStart, get_epoch_nanoseconds(), boost::lexical_cast<std::string>(std::this_thread::get_id()) };
-  _responseTask->setQueryStart(queryStart);
+  *(performance_data.at(0)) = { 0, 0, "NO_PAPI", "RequestParseTask", "requestParse", _queryStart, get_epoch_nanoseconds(), boost::lexical_cast<std::string>(std::this_thread::get_id()) };
+  _responseTask->setQueryStart(_queryStart);
   scheduler->schedule(_responseTask);
   _responseTask.reset();  // yield responsibility
 }
