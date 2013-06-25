@@ -18,7 +18,7 @@ class RequestParseTask : public net::AbstractRequestHandler {
  private:
   net::AbstractConnection *_connection;
   std::shared_ptr<ResponseTask> _responseTask;
-  epoch_t _queryStart;
+  const epoch_t _queryStart;
 
  public:
   explicit RequestParseTask(net::AbstractConnection *connection);
@@ -27,9 +27,6 @@ class RequestParseTask : public net::AbstractRequestHandler {
   virtual void operator()();
   static std::string name();
   const std::string vname();
-  void setQueryStart(){
-    _queryStart = get_epoch_nanoseconds();
-  }
 };
 
 }
