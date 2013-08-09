@@ -16,8 +16,9 @@ public:
   DynamicParallelizationCentralScheduler(int threads = getNumberOfCoresOnSystem());
   virtual ~DynamicParallelizationCentralScheduler();
 
-  void virtual notifyReady(std::shared_ptr<Task> task);
+  virtual void notifyReady(std::shared_ptr<Task> task);
 
+  virtual void schedule(std::shared_ptr<Task> task);
 };
 
 #endif /* DYNAMICPARALLELIZATIONCENTRALSCHEDULER_H_ */

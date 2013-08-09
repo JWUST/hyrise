@@ -120,8 +120,8 @@ void RequestParseTask::operator()() {
           task->setSessionId(sessionId);
           task->setPlanId(final_hash);
           task->setTXContext(ctx);
-	  task->setId(ctx.tid);
-	  _responseTask->registerPlanOperation(task);
+	        task->setId(ctx.tid);
+	        _responseTask->registerPlanOperation(task);
           if (!task->hasSuccessors()) {
             // The response has to depend on all tasks, ie. we don't want to respond
             // before all tasks finished running, even if they don't contribute to the result
@@ -164,7 +164,7 @@ void RequestParseTask::operator()() {
     _responseTask.reset();  // yield responsibility
 
   } else {
-    scheduler->scheduleQuery(tasks);
+    scheduler->scheduleTasks(tasks);
     *(performance_data.at(0)) = { 0, 0, "NO_PAPI", "RequestParseTask", "requestParse", _queryStart, get_epoch_nanoseconds(), boost::lexical_cast<std::string>(std::this_thread::get_id()) };
     _responseTask->setQueryStart(_queryStart);
     scheduler->schedule(_responseTask);

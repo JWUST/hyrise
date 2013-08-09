@@ -17,12 +17,18 @@ class ParallelizablePlanOperation : public PlanOperation {
   /// separate input data based on instance enumeration.
   virtual void splitInput();
   virtual void refreshInput();
+  virtual std::vector<std::shared_ptr<Task> > applyDynamicParallelization();
 
   void setPart(size_t part);
   void setCount(size_t count);
+  void setDynamicCount(int dynmicCount);
+  int getDynamicCount();
+  bool hasDynamicCount(){return (_dynamicCount != 0);}
+
  protected:
   size_t _part = 0;
   size_t _count = 0;
+  int _dynamicCount = 0;
 };
 
 }}

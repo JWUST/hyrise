@@ -22,6 +22,19 @@ void ParallelizablePlanOperation::splitInput() {
   }
 }
 
+std::vector<std::shared_ptr<Task> > ParallelizablePlanOperation::applyDynamicParallelization(){
+  
+  // determine degree of parallelism
+
+  // create new tasks 
+  // set dependencies
+  // add tasks to response task
+
+    std::vector<std::shared_ptr<Task> > tasks;
+    std::cout << "dynamic parallelization still needs to be implemented for operator " << vname() << std::endl;
+    tasks.push_back(shared_from_this());
+    return tasks;
+}
 
 void ParallelizablePlanOperation::refreshInput() {
   PlanOperation::refreshInput();
@@ -33,6 +46,13 @@ void ParallelizablePlanOperation::setPart(size_t part) {
 }
 void ParallelizablePlanOperation::setCount(size_t count) {
   _count = count;
+}
+void ParallelizablePlanOperation::setDynamicCount(int dynamicCount) {
+  _dynamicCount = dynamicCount;
+}
+
+int ParallelizablePlanOperation::getDynamicCount() {
+  return _dynamicCount;
 }
 
 }}

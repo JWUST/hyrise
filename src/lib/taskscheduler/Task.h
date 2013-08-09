@@ -57,8 +57,10 @@ protected:
   int _dependencyWaitCount;
   // mutex for dependencyCount and dependency vector
   std::mutex _depMutex;
-  // mutex for observer vector
-  std::mutex _observerMutex;
+  // mutex for ready observer vector
+  std::mutex _readyObserverMutex;
+    // mutex for done observer vector
+  std::mutex _doneObserverMutex;
   // mutex to stop notifications, while task is being scheduled to wait set in SimpleTaskScheduler
   std::mutex _notifyMutex;
   // indicates on which core the task should run
@@ -99,9 +101,23 @@ public:
    */
   void addDependency(std::shared_ptr<Task> dependency);
   /*
+   * adds dependency, but do not increase dependencyWaitCount or register as DoneObserver, as dependency is known to be done
+   */
+  void addDoneDependency(std::shared_ptr<Task> dependency);
+  /*
+   * removes dependency; 
+   */
+  void removeDependency(std::shared_ptr<Task> dependency);
+  /*
    * gets the number of dependencies
    */
   int getDependencyCount();
+  /*
+   * set dependencies directly and not managed by Task; make sure dependency count and dependencies match;
+   * currently used to set dependencies for a task that is ready to run (no unmet dependencies), but needs to get inputs
+   */
+   void setDependencies(std::vector<std::shared_ptr<Task> > dependencies, int count);
+
   /*
    * adds an observer that gets notified if this task is ready to run
    */

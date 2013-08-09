@@ -74,6 +74,7 @@ void WorkerThread::operator()(){
       if (task) {
         (*task)();
         LOG4CXX_DEBUG(scheduler._logger, "Executed task " << task->vname() << "; hex " << std::hex << &task << std::dec);
+        //std::cout << "Executed task " << task->vname() << "; hex " << std::hex << (void *)task.get() << std::dec << std::endl;
         // notify done observers that task is done
         task->notifyDoneObservers();
       }

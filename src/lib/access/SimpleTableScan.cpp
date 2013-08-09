@@ -2,9 +2,12 @@
 #include "access/SimpleTableScan.h"
 
 #include "access/expressions/pred_buildExpression.h"
+#include "access/expressions/pred_EqualsExpression.h"
 
 #include "storage/PointerCalculator.h"
 #include "storage/PointerCalculatorFactory.h"
+#include "access/system/ResponseTask.h"
+#include "access/UnionAll.h"
 
 namespace hyrise {
 namespace access {
@@ -59,6 +62,7 @@ void SimpleTableScan::executeMaterialized() {
 }
 
 void SimpleTableScan::executePlanOperation() {
+
   if (producesPositions) {
     executePositional();
   } else {
@@ -87,6 +91,80 @@ const std::string SimpleTableScan::vname() {
 void SimpleTableScan::setPredicate(SimpleExpression *c) {
   _comparator = c;
 }
+
+std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization(){
+
+  std::vector<std::shared_ptr<Task> > tasks;
+
+  // get successors of current task
+  std::vector<Task*> successors;
+  for (auto doneObserver : _doneObservers) {
+    Task* const task = dynamic_cast<Task*>(doneObserver);
+    successors.push_back(task);
+  }
+
+  // remove task from dependencies of successors
+  for (auto successor : successors){
+    successor->removeDependency(shared_from_this());
+  }
+
+  // remove done observers from current task
+  _doneObservers.clear();
+
+  // set part and count for this task as first task
+  this->setPart(0);
+  this->setCount(_dynamicCount);
+  tasks.push_back(shared_from_this());
+  std::string opIdBase = _operatorId;
+  std::ostringstream os;
+  os << 0;
+  _operatorId = opIdBase + "_" + os.str();
+ 
+  // create other simpleTableScans 
+  for(int i = 1; i < _dynamicCount; i++){
+    auto t = std::make_shared<SimpleTableScan>();
+
+    std::ostringstream s;
+    s << i;
+    t->setOperatorId(opIdBase + "_" + s.str());
+
+    // build simpletabletask
+    t->setPredicate(_comparator->clone());
+    t->setProducesPositions(producesPositions);
+    t->setPart(i);
+    t->setCount(_dynamicCount);
+    t->setPriority(_priority);
+    t->setSessionId(_sessionId);
+    t->setPlanId(_planId);
+    t->setTXContext(_txContext);
+    t->setId(_txContext.tid);
+
+    // set depencies equal to current task
+    for(auto d : _dependencies)
+      t->addDoneDependency(d);
+
+    t->setPlanOperationName("SimpleTableScan");
+    getResponseTask()->registerPlanOperation(t);
+    tasks.push_back(t);
+  }
+
+
+  // create union and set dependencies
+  auto unionall = std::make_shared<UnionAll>();
+  unionall->setPlanOperationName("UnionAll");
+  
+  for(auto t: tasks)
+    unionall->addDependency(t);
+
+  // set union as dependency to all successors
+  for (auto successor : successors)
+      successor->addDependency(unionall);
+
+  getResponseTask()->registerPlanOperation(unionall);
+  tasks.push_back(unionall);
+  return tasks;
+}
+
 
 }
 }

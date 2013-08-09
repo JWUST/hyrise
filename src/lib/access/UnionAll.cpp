@@ -9,12 +9,15 @@ namespace hyrise { namespace access {
 namespace { auto _ = QueryParser::registerTrivialPlanOperation<UnionAll>("UnionAll"); }
 
 void UnionAll::executePlanOperation() {
+
   const auto& tables = input.getTables();
+  
   auto pcs = convert<const PointerCalculator>(tables);
   if (allValid(pcs)) {
     addResult(PointerCalculator::concatenate_many(begin(pcs), end(pcs)));
     return;
   }
+
 
   auto mtvs = convert<const MutableVerticalTable>(tables);
   if (allValid(mtvs)) {
@@ -32,6 +35,10 @@ void UnionAll::executePlanOperation() {
   }
   
   addResult(std::make_shared<const HorizontalTable>(tables));
+}
+
+const std::string UnionAll::vname() {
+  return "UnionAll";
 }
 
 }}

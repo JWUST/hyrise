@@ -48,6 +48,11 @@ class EqualsExpression : public SimpleFieldExpression {
   inline virtual bool operator()(size_t row) {
     return value_exists && table->getValueId(field, row) == lower_bound;
   }
+
+
+  EqualsExpression * clone(){
+    return new EqualsExpression(input, field, value);
+  }
 };
 
 /**

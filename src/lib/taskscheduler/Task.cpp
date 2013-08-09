@@ -20,7 +20,7 @@ void Task::unlockForNotifications() {
 }
 
 void Task::notifyReadyObservers() {
-	std::lock_guard<std::mutex> lk(_observerMutex);
+	std::lock_guard<std::mutex> lk(_readyObserverMutex);
 	std::vector<TaskReadyObserver *>::iterator itr;
 	for (itr = _readyObservers.begin(); itr != _readyObservers.end(); ++itr) {
 		(*itr)->notifyReady(shared_from_this());
@@ -28,7 +28,7 @@ void Task::notifyReadyObservers() {
 }
 
 void Task::notifyDoneObservers() {
-	std::lock_guard<std::mutex> lk(_observerMutex);
+	std::lock_guard<std::mutex> lk(_doneObserverMutex);
 	std::vector<TaskDoneObserver *>::iterator itr;
 	for (itr = _doneObservers.begin(); itr != _doneObservers.end(); ++itr) {
 		(*itr)->notifyDone(shared_from_this());
@@ -45,18 +45,43 @@ void Task::addDependency(std::shared_ptr<Task> dependency) {
     ++_dependencyWaitCount;
   }
   dependency->addDoneObserver(this);
+}
 
+void Task::addDoneDependency(std::shared_ptr<Task> dependency) {
+  {
+    std::lock_guard<std::mutex> lk(_depMutex);
+    _dependencies.push_back(dependency);
+  }
+}
+
+void Task::removeDependency(std::shared_ptr<Task> dependency) {
+    
+    std::lock_guard<std::mutex> lk(_depMutex);
+    // remove from dependencies
+    std::vector<std::shared_ptr<Task>>::iterator it = _dependencies.begin();
+    while (it != _dependencies.end()) {
+      if (*it == dependency){
+        it = _dependencies.erase(it);
+        --_dependencyWaitCount;
+      }
+      else 
+        ++it;
+    }
+}
+
+void Task::setDependencies(std::vector<std::shared_ptr<Task> > dependencies, int count) {
+    std::lock_guard<std::mutex> lk(_depMutex);
+    _dependencies = dependencies;
+    _dependencyWaitCount = 0;
 }
 
 void Task::addReadyObserver(TaskReadyObserver *observer) {
-
-  std::lock_guard<std::mutex> lk(_observerMutex);
+  std::lock_guard<std::mutex> lk(_readyObserverMutex);
   _readyObservers.push_back(observer);
 }
 
 void Task::addDoneObserver(TaskDoneObserver *observer) {
-
-  std::lock_guard<std::mutex> lk(_observerMutex);
+  std::lock_guard<std::mutex> lk(_doneObserverMutex);
   _doneObservers.push_back(observer);
 }
 

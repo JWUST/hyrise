@@ -23,6 +23,12 @@ class SimpleExpression : public hyrise::access::AbstractExpression {
   inline virtual bool operator()(size_t row) {
     throw std::runtime_error("Cannot call base class");
   }
+
+  virtual SimpleExpression * clone(){
+    throw std::runtime_error("Cannot clone base class; implement in derived");
+  }
+
+
 };
 
 

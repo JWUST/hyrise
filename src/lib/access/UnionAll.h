@@ -7,6 +7,7 @@ namespace hyrise { namespace access {
 
 class UnionAll : public PlanOperation {
   void executePlanOperation();
+    const std::string vname();
 };
 
 }}
