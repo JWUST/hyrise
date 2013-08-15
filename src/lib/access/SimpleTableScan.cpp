@@ -92,6 +92,10 @@ void SimpleTableScan::setPredicate(SimpleExpression *c) {
   _comparator = c;
 }
 
+uint SimpleTableScan::determineDynamicCount() {
+  return 8; //TODO make this dynamic
+}
+
 std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization(){
 
   std::vector<std::shared_ptr<Task> > tasks;
@@ -111,9 +115,11 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
   // remove done observers from current task
   _doneObservers.clear();
 
+  auto dynamicCount = this->determineDynamicCount();
+
   // set part and count for this task as first task
   this->setPart(0);
-  this->setCount(_dynamicCount);
+  this->setCount(dynamicCount);
   tasks.push_back(shared_from_this());
   std::string opIdBase = _operatorId;
   std::ostringstream os;
@@ -121,7 +127,7 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
   _operatorId = opIdBase + "_" + os.str();
  
   // create other simpleTableScans 
-  for(int i = 1; i < _dynamicCount; i++){
+  for(uint i = 1; i < dynamicCount; i++){
     auto t = std::make_shared<SimpleTableScan>();
 
     std::ostringstream s;
@@ -132,7 +138,7 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
     t->setPredicate(_comparator->clone());
     t->setProducesPositions(producesPositions);
     t->setPart(i);
-    t->setCount(_dynamicCount);
+    t->setCount(dynamicCount);
     t->setPriority(_priority);
     t->setSessionId(_sessionId);
     t->setPlanId(_planId);

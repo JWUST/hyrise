@@ -21,14 +21,14 @@ class ParallelizablePlanOperation : public PlanOperation {
 
   void setPart(size_t part);
   void setCount(size_t count);
-  void setDynamicCount(int dynmicCount);
-  int getDynamicCount();
-  bool hasDynamicCount(){return (_dynamicCount != 0);}
+  void setDynamic(bool dynamic);
+  bool isDynamic() {return _dynamic;};
 
  protected:
   size_t _part = 0;
   size_t _count = 0;
-  int _dynamicCount = 0;
+  bool _dynamic = false;
+  virtual uint determineDynamicCount();
 };
 
 }}

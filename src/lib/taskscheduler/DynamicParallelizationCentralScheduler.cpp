@@ -29,7 +29,7 @@ void DynamicParallelizationCentralScheduler::schedule(std::shared_ptr<Task> task
 	//std::cout << "DynamicParallelizationCentralScheduler schedule " << task->vname() << std::endl;
 
 	if (auto para = std::dynamic_pointer_cast<hyrise::access::ParallelizablePlanOperation>(task)) {
-		if(para->hasDynamicCount() && para->isReady()){
+		if(para->isDynamic() && para->isReady()){
 			auto tasks = para->applyDynamicParallelization();
 			for (const auto& i: tasks) {
       			CentralScheduler::schedule(i);
@@ -51,7 +51,7 @@ void DynamicParallelizationCentralScheduler::notifyReady(std::shared_ptr<Task> t
   if (tmp == 1) {
     LOG4CXX_DEBUG(_logger, "Task " << std::hex << (void *)task.get() << std::dec << " ready to run");
     if (auto para = std::dynamic_pointer_cast<hyrise::access::ParallelizablePlanOperation>(task)) {
-		  if(para->hasDynamicCount()){
+		  if(para->isDynamic()){
 			 auto tasks = para->applyDynamicParallelization();
 			 for (const auto& i: tasks) {
         if (i->isReady()){

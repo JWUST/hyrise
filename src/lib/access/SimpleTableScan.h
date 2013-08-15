@@ -22,6 +22,8 @@ public:
   void setPredicate(SimpleExpression *c);
   virtual std::vector<std::shared_ptr<Task> > applyDynamicParallelization();
 
+protected:
+  uint determineDynamicCount();
 
 private:
   SimpleExpression *_comparator;
