@@ -56,6 +56,14 @@ class AbstractTaskScheduler {
    * get number of worker
    */
   virtual size_t getNumberOfWorker() const = 0;
+
+  void setMaxTaskSize(size_t maxTaskSize) {_maxTaskSize=maxTaskSize;};
+  size_t getMaxTaskSize() const {return _maxTaskSize;};
+  bool hasMaxTaskSize() {return _maxTaskSize != 0;};
+
+  private:
+    size_t _maxTaskSize = 0;
+
 };
 
 #endif  // SRC_LIB_TASKSCHEDULER_ABSTRACTTASKSCHEDULER_H_
