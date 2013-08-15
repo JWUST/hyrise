@@ -143,8 +143,14 @@ int main(int argc, char *argv[]) {
   ("scheduler,s", po::value<std::string>(&scheduler_name)->default_value("WSCoreBoundQueuesScheduler"), "Name of the scheduler to use")
   ("maxTaskSize,m", po::value<size_t>(&maxTaskSize)->default_value(DEFAULT_MTS), "Maximum task size used in dynamic parallelization scheduler. Use 0 for unbounded task run time.");
   po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
-  po::notify(vm);
+
+  try { 
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+  } catch(po::error &e) {
+    std::cout << desc << std::endl;
+    return EXIT_FAILURE;
+  }
 
   if (vm.count("help")) {
     std::cout << desc << std::endl;
