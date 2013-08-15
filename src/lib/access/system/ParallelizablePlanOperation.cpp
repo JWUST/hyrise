@@ -22,7 +22,7 @@ void ParallelizablePlanOperation::splitInput() {
   }
 }
 
-std::vector<std::shared_ptr<Task> > ParallelizablePlanOperation::applyDynamicParallelization(){
+std::vector<std::shared_ptr<Task> > ParallelizablePlanOperation::applyDynamicParallelization(size_t maxTaskRunTime){
   
   // determine degree of parallelism
 
@@ -50,7 +50,7 @@ void ParallelizablePlanOperation::setCount(size_t count) {
 void ParallelizablePlanOperation::setDynamic(bool dynamic) {
   _dynamic = dynamic;
 }
-uint ParallelizablePlanOperation::determineDynamicCount() {
+uint ParallelizablePlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
   return 1; //TODO default value?
 }
 

@@ -92,11 +92,18 @@ void SimpleTableScan::setPredicate(SimpleExpression *c) {
   _comparator = c;
 }
 
-uint SimpleTableScan::determineDynamicCount() {
-  return 8; //TODO make this dynamic
+uint SimpleTableScan::determineDynamicCount(size_t maxTaskRunTime) {
+  if (maxTaskRunTime == 0) {
+    return 1;
+  }
+  auto tbl_size = input.getTable(0)->size();
+  auto rows_per_time_unit = 10; // TODO this needs to be a configurable value
+  auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
+
+  return num_tasks;
 }
 
-std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization(){
+std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization(size_t maxTaskRunTime){
 
   std::vector<std::shared_ptr<Task> > tasks;
 
@@ -115,7 +122,7 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
   // remove done observers from current task
   _doneObservers.clear();
 
-  auto dynamicCount = this->determineDynamicCount();
+  auto dynamicCount = this->determineDynamicCount(maxTaskRunTime);
 
   // set part and count for this task as first task
   this->setPart(0);

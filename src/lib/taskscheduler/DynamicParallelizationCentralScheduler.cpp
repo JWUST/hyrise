@@ -30,7 +30,7 @@ void DynamicParallelizationCentralScheduler::schedule(std::shared_ptr<Task> task
 
 	if (auto para = std::dynamic_pointer_cast<hyrise::access::ParallelizablePlanOperation>(task)) {
 		if(para->isDynamic() && para->isReady()){
-			auto tasks = para->applyDynamicParallelization();
+			auto tasks = para->applyDynamicParallelization(this->getMaxTaskSize());
 			for (const auto& i: tasks) {
       			CentralScheduler::schedule(i);
     	}			
@@ -52,7 +52,7 @@ void DynamicParallelizationCentralScheduler::notifyReady(std::shared_ptr<Task> t
     LOG4CXX_DEBUG(_logger, "Task " << std::hex << (void *)task.get() << std::dec << " ready to run");
     if (auto para = std::dynamic_pointer_cast<hyrise::access::ParallelizablePlanOperation>(task)) {
 		  if(para->isDynamic()){
-			 auto tasks = para->applyDynamicParallelization();
+			 auto tasks = para->applyDynamicParallelization(this->getMaxTaskSize());
 			 for (const auto& i: tasks) {
         if (i->isReady()){
           std::lock_guard<std::mutex> lk(_queueMutex);

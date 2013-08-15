@@ -28,6 +28,8 @@ using namespace log4cxx::helpers;
 const char *PID_FILE = "./hyrise_server.pid";
 const char *PORT_FILE = "./hyrise_server.port";
 const size_t DEFAULT_PORT = 5000;
+// default maximum task size. 0 is disabled.
+const size_t DEFAULT_MTS = 0;
 
 // Global EBB Server instance
 static ebb_server server;
@@ -139,7 +141,7 @@ int main(int argc, char *argv[]) {
   ("port,p", po::value<size_t>(&port)->default_value(DEFAULT_PORT), "Server Port")
   ("logdef,l", po::value<std::string>(&logPropertyFile)->default_value("build/log.properties"), "Log4CXX Log Properties File")
   ("scheduler,s", po::value<std::string>(&scheduler_name)->default_value("WSCoreBoundQueuesScheduler"), "Name of the scheduler to use")
-  ("maxTaskSize,mts", po::value<size_t>(&maxTaskSize)->default_value(0), "Maximum task size used in dynamic parallelization scheduler. Use 0 for unbounded task run time.");
+  ("maxTaskSize,m", po::value<size_t>(&maxTaskSize)->default_value(DEFAULT_MTS), "Maximum task size used in dynamic parallelization scheduler. Use 0 for unbounded task run time.");
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
   po::notify(vm);
