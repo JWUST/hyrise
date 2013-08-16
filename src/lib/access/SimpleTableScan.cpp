@@ -96,10 +96,11 @@ uint SimpleTableScan::determineDynamicCount(size_t maxTaskRunTime) {
   if (maxTaskRunTime == 0) {
     return 1;
   }
-  auto tbl_size = input.getTable(0)->size();
-  auto rows_per_time_unit = 10; // TODO this needs to be a configurable value
+  const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
+  auto& inputTable = dep->getResultTable();
+  auto tbl_size = inputTable->size();
+  auto rows_per_time_unit = 5; // TODO this needs to be a configurable value
   auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
-
   return num_tasks;
 }
 
