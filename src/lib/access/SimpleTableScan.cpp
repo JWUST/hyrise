@@ -108,6 +108,14 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
 
   std::vector<std::shared_ptr<Task> > tasks;
 
+  auto dynamicCount = this->determineDynamicCount(maxTaskRunTime);
+
+  // if no parallelization is necessary, just return this task again as is
+  if (dynamicCount <= 1) {
+    tasks.push_back(shared_from_this());
+    return tasks;
+  }
+
   // get successors of current task
   std::vector<Task*> successors;
   for (auto doneObserver : _doneObservers) {
@@ -122,8 +130,6 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
 
   // remove done observers from current task
   _doneObservers.clear();
-
-  auto dynamicCount = this->determineDynamicCount(maxTaskRunTime);
 
   // set part and count for this task as first task
   this->setPart(0);
@@ -162,7 +168,6 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
     tasks.push_back(t);
   }
 
-
   // create union and set dependencies
   auto unionall = std::make_shared<UnionAll>();
   unionall->setPlanOperationName("UnionAll");
@@ -176,6 +181,7 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
 
   getResponseTask()->registerPlanOperation(unionall);
   tasks.push_back(unionall);
+  
   return tasks;
 }
 
