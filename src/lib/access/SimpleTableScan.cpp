@@ -26,6 +26,7 @@ SimpleTableScan::~SimpleTableScan() {
 
 void SimpleTableScan::setupPlanOperation() {
   _comparator->walk(input.getTables());
+  this->setProfiling(true);
 }
 
 void SimpleTableScan::executePositional() {
