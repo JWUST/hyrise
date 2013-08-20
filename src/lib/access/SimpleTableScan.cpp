@@ -17,6 +17,7 @@ namespace {
 }
 
 SimpleTableScan::SimpleTableScan(): _comparator(nullptr) {
+  setProfiling(true);
 }
 
 SimpleTableScan::~SimpleTableScan() {
@@ -26,7 +27,6 @@ SimpleTableScan::~SimpleTableScan() {
 
 void SimpleTableScan::setupPlanOperation() {
   _comparator->walk(input.getTables());
-  this->setProfiling(true);
 }
 
 void SimpleTableScan::executePositional() {
