@@ -1,4 +1,7 @@
-
+output_*
+*.dot
+*.pdf
+*.gprof
 settings.mk
 GnuplotLocation.txt
 

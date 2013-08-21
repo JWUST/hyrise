@@ -143,7 +143,7 @@ struct Profiler {
   bool _profile;
   inline Profiler(bool profile, const std::string& name) : _profile(profile) {
     if (_profile) {
-      ProfilerStart((name + std::to_string(get_epoch_nanoseconds()) + ".gprof").c_str());
+      ProfilerStart((name + "_" + std::to_string(get_epoch_nanoseconds()) + ".gprof").c_str());
     }
   }
   inline ~Profiler() {
