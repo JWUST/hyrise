@@ -3,14 +3,14 @@
 #define SRC_LIB_ACCESS_TABLESCAN_H_
 
 #include <memory>
-#include "access/system/PlanOperation.h"
+#include "access/system/ParallelizablePlanOperation.h"
 
 namespace hyrise { namespace access {
 
 class AbstractExpression;
 
 /// Implements registration based expression scan
-class TableScan : public PlanOperation {
+class TableScan : public ParallelizablePlanOperation {
  public:
   /// Construct TableScan for a specific expression, take
   /// ownership of passed in expression
