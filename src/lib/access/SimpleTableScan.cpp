@@ -17,7 +17,6 @@ namespace {
 }
 
 SimpleTableScan::SimpleTableScan(): _comparator(nullptr) {
-  setProfiling(true);
 }
 
 SimpleTableScan::~SimpleTableScan() {
