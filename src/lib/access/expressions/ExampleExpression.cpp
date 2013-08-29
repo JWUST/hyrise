@@ -39,4 +39,8 @@ std::unique_ptr<ExampleExpression> ExampleExpression::parse(const Json::Value& d
   return make_unique<ExampleExpression>(data["column"].asUInt(), data["value"].asUInt());
 }
 
+ExampleExpression * ExampleExpression::clone() {
+  return new ExampleExpression(_column, _value);
+}
+
 }}
