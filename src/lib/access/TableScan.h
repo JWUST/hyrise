@@ -18,9 +18,11 @@ class TableScan : public ParallelizablePlanOperation {
   /// Parse TableScan from 
   static std::shared_ptr<PlanOperation> parse(Json::Value& data);
   const std::string vname() { return "me"; }
+  virtual std::vector<std::shared_ptr<Task> > applyDynamicParallelization(size_t maxTaskRunTime);
  protected:
   void setupPlanOperation();
   void executePlanOperation();
+  uint determineDynamicCount(size_t maxTaskRunTime);
  private:
   std::unique_ptr<AbstractExpression> _expr;
 };

@@ -12,6 +12,9 @@ class AbstractExpression {
   virtual ~AbstractExpression() {}
   virtual void walk(const std::vector<storage::c_atable_ptr_t> &l) = 0;
   virtual storage::pos_list_t* match(const size_t start, const size_t stop) = 0;
+  virtual AbstractExpression * clone(){
+    throw std::runtime_error("Cannot clone base class; implement in derived");
+  }
 };
 
 }}
