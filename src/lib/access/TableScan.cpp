@@ -54,8 +54,9 @@ uint TableScan::determineDynamicCount(size_t maxTaskRunTime) {
   if (maxTaskRunTime == 0) {
     return 1;
   }
-  const auto& tablerange = std::dynamic_pointer_cast<const TableRangeView>(getInputTable());
-  size_t tbl_size = tablerange->size();
+  const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
+  auto& inputTable = dep->getResultTable();
+  size_t tbl_size = inputTable->size();
   auto rows_per_time_unit = 63104; // rows per ms. TODO this needs to be a configurable value
   auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
   return num_tasks;
