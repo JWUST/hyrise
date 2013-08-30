@@ -32,6 +32,7 @@ void TableScan::setupPlanOperation() {
 
 void TableScan::executePlanOperation() {
   size_t start, stop;
+  std::cout << "InputTableSize: " << getInputTable()->size() << std::endl;
   const auto& tablerange = std::dynamic_pointer_cast<const TableRangeView>(getInputTable());
   if(tablerange){
     start = tablerange->getStart();
@@ -43,6 +44,7 @@ void TableScan::executePlanOperation() {
   }
 
   pos_list_t* positions = _expr->match(start, stop);
+  std::cout << "Position List Size is: " << positions->size() << std::endl;
   addResult(PointerCalculatorFactory::createPointerCalculatorNonRef(getInputTable(), nullptr, positions));
 }
 

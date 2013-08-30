@@ -1,0 +1,20 @@
+{
+"operators": {
+  "0" : {
+    "type" : "TableLoad",
+    "filename" : "vbap.tbl"
+  },
+  "1" : {
+      "type" : "TableScan",
+      "expression": "hyrise::example",
+      "instances": 2,
+      "column": 2,
+      "value": 10 
+  },
+  "2" : {
+      "type" : "MaterializingScan",
+      "memcpy" : true
+  }
+    },
+    "edges" : [["0","1"],["1","2"]]
+}
