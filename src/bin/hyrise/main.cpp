@@ -28,6 +28,8 @@ using namespace log4cxx::helpers;
 const char *PID_FILE = "./hyrise_server.pid";
 const char *PORT_FILE = "./hyrise_server.port";
 const size_t DEFAULT_PORT = 5000;
+// default maximum task size. 0 is disabled.
+const size_t DEFAULT_MTS = 0;
 
 // Global EBB Server instance
 static ebb_server server;
@@ -131,16 +133,24 @@ int main(int argc, char *argv[]) {
   size_t port = 0;
   std::string logPropertyFile;
   std::string scheduler_name;
+  size_t maxTaskSize = 0;
 
   // Program Options
   po::options_description desc("Allowed Parameters");
   desc.add_options()("help", "Shows this help message")
   ("port,p", po::value<size_t>(&port)->default_value(DEFAULT_PORT), "Server Port")
   ("logdef,l", po::value<std::string>(&logPropertyFile)->default_value("build/log.properties"), "Log4CXX Log Properties File")
-  ("scheduler,s", po::value<std::string>(&scheduler_name)->default_value("WSCoreBoundQueuesScheduler"), "Name of the scheduler to use");
+  ("scheduler,s", po::value<std::string>(&scheduler_name)->default_value("WSCoreBoundQueuesScheduler"), "Name of the scheduler to use")
+  ("maxTaskSize,m", po::value<size_t>(&maxTaskSize)->default_value(DEFAULT_MTS), "Maximum task size used in dynamic parallelization scheduler. Use 0 for unbounded task run time.");
   po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
-  po::notify(vm);
+
+  try { 
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+  } catch(po::error &e) {
+    std::cout << desc << std::endl;
+    return EXIT_FAILURE;
+  }
 
   if (vm.count("help")) {
     std::cout << desc << std::endl;
@@ -163,8 +173,10 @@ int main(int argc, char *argv[]) {
   SharedScheduler::getInstance().init(scheduler_name, getNumberOfCoresOnSystem());
   AbstractTaskScheduler *scheduler = SharedScheduler::getInstance().getScheduler();
 
+  scheduler->setMaxTaskSize(maxTaskSize);
+
   signal(SIGINT, &shutdown);
-  // MainS erver Loop
+  // Main Server Loop
   struct ev_loop *loop = ev_default_loop(0);
 
   // Initialize server based on libev event loop

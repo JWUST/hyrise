@@ -12,7 +12,7 @@
 	},
 	"1" : {
 	    "type" : "SimpleTableScan",
-	    "dynamicCount": 8,
+	    "dynamic": true,
 	    "predicates" : [
 		{"type" : "EQ", "in" : 0, "f" : 0, "value" : 2009}
 	    ]

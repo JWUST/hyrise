@@ -3,14 +3,14 @@
 #define SRC_LIB_ACCESS_TABLESCAN_H_
 
 #include <memory>
-#include "access/system/PlanOperation.h"
+#include "access/system/ParallelizablePlanOperation.h"
 
 namespace hyrise { namespace access {
 
 class AbstractExpression;
 
 /// Implements registration based expression scan
-class TableScan : public PlanOperation {
+class TableScan : public ParallelizablePlanOperation {
  public:
   /// Construct TableScan for a specific expression, take
   /// ownership of passed in expression
@@ -18,9 +18,11 @@ class TableScan : public PlanOperation {
   /// Parse TableScan from 
   static std::shared_ptr<PlanOperation> parse(Json::Value& data);
   const std::string vname() { return "me"; }
+  virtual std::vector<std::shared_ptr<Task> > applyDynamicParallelization(size_t maxTaskRunTime);
  protected:
   void setupPlanOperation();
   void executePlanOperation();
+  uint determineDynamicCount(size_t maxTaskRunTime);
  private:
   std::unique_ptr<AbstractExpression> _expr;
 };

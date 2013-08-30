@@ -92,9 +92,29 @@ void SimpleTableScan::setPredicate(SimpleExpression *c) {
   _comparator = c;
 }
 
-std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization(){
+uint SimpleTableScan::determineDynamicCount(size_t maxTaskRunTime) {
+  if (maxTaskRunTime == 0) {
+    return 1;
+  }
+  const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
+  auto& inputTable = dep->getResultTable();
+  auto tbl_size = inputTable->size();
+  auto rows_per_time_unit = 558; // rows per ms. TODO this needs to be a configurable value
+  auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
+  return num_tasks;
+}
+
+std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization(size_t maxTaskRunTime){
 
   std::vector<std::shared_ptr<Task> > tasks;
+
+  auto dynamicCount = this->determineDynamicCount(maxTaskRunTime);
+
+  // if no parallelization is necessary, just return this task again as is
+  if (dynamicCount <= 1) {
+    tasks.push_back(shared_from_this());
+    return tasks;
+  }
 
   // get successors of current task
   std::vector<Task*> successors;
@@ -113,7 +133,7 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
 
   // set part and count for this task as first task
   this->setPart(0);
-  this->setCount(_dynamicCount);
+  this->setCount(dynamicCount);
   tasks.push_back(shared_from_this());
   std::string opIdBase = _operatorId;
   std::ostringstream os;
@@ -121,7 +141,7 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
   _operatorId = opIdBase + "_" + os.str();
  
   // create other simpleTableScans 
-  for(int i = 1; i < _dynamicCount; i++){
+  for(uint i = 1; i < dynamicCount; i++){
     auto t = std::make_shared<SimpleTableScan>();
 
     std::ostringstream s;
@@ -132,7 +152,7 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
     t->setPredicate(_comparator->clone());
     t->setProducesPositions(producesPositions);
     t->setPart(i);
-    t->setCount(_dynamicCount);
+    t->setCount(dynamicCount);
     t->setPriority(_priority);
     t->setSessionId(_sessionId);
     t->setPlanId(_planId);
@@ -148,7 +168,6 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
     tasks.push_back(t);
   }
 
-
   // create union and set dependencies
   auto unionall = std::make_shared<UnionAll>();
   unionall->setPlanOperationName("UnionAll");
@@ -162,6 +181,7 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
 
   getResponseTask()->registerPlanOperation(unionall);
   tasks.push_back(unionall);
+  
   return tasks;
 }
 

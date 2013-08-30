@@ -18,7 +18,7 @@ inline bool ExampleExpression::operator()(const size_t& row) {  return _vector->
 
 pos_list_t* ExampleExpression::match(const size_t start, const size_t stop) {
   auto pl = new pos_list_t;
-  for(size_t row=0; row < stop; ++row) {
+  for(size_t row=start; row < stop; ++row) {
     if (this->ExampleExpression::operator()(row)) {
       pl->push_back(row);
     }
@@ -37,6 +37,10 @@ void ExampleExpression::walk(const std::vector<hyrise::storage::c_atable_ptr_t> 
     
 std::unique_ptr<ExampleExpression> ExampleExpression::parse(const Json::Value& data) {
   return make_unique<ExampleExpression>(data["column"].asUInt(), data["value"].asUInt());
+}
+
+ExampleExpression * ExampleExpression::clone() {
+  return new ExampleExpression(_column, _value);
 }
 
 }}

@@ -46,13 +46,14 @@ void QueryParser::buildTasks(
     if (auto para = std::dynamic_pointer_cast<ParallelizablePlanOperation>(planOperation)) {
       para->setPart(planOperationSpec["part"].asUInt());
       para->setCount(planOperationSpec["count"].asInt());
-      para->setDynamicCount(planOperationSpec["dynamicCount"].asUInt());
+      para->setDynamic(planOperationSpec["dynamic"].asBool());
     } else {
       if (planOperationSpec.isMember("part") || planOperationSpec.isMember("count")) {
         throw std::runtime_error("Trying to parallelize " + typeName + ", which is not a subclass of Parallelizable");
       }
     }
-    
+    if (planOperationSpec.isMember("profiling"))
+      planOperation->setProfiling(planOperationSpec["profiling"].asBool());
     planOperation->setOperatorId(members[i]);
     if (planOperationSpec.isMember("core"))
       planOperation->setPreferredCore(planOperationSpec["core"].asInt());
