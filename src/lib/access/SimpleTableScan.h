@@ -20,8 +20,10 @@ public:
   static std::shared_ptr<PlanOperation> parse(Json::Value &data);
   const std::string vname();
   void setPredicate(SimpleExpression *c);
-  virtual std::vector<std::shared_ptr<Task> > applyDynamicParallelization();
+  virtual std::vector<std::shared_ptr<Task> > applyDynamicParallelization(size_t maxTaskRunTime);
 
+protected:
+  uint determineDynamicCount(size_t maxTaskRunTime);
 
 private:
   SimpleExpression *_comparator;

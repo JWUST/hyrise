@@ -25,9 +25,8 @@ class SimpleExpression : public hyrise::access::AbstractExpression {
   }
 
   virtual SimpleExpression * clone(){
-    throw std::runtime_error("Cannot clone base class; implement in derived");
+    throw std::runtime_error("Not implemented");
   }
-
 
 };
 
