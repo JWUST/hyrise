@@ -65,7 +65,7 @@ uint TableScan::determineDynamicCount(size_t maxTaskRunTime) {
   const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
   auto& inputTable = dep->getResultTable();
   size_t tbl_size = inputTable->size();
-  auto rows_per_time_unit = 63104; // rows per ms. TODO this needs to be a configurable value
+  auto rows_per_time_unit = 100000; // rows per ms. TODO this needs to be a configurable value
   auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
   return num_tasks;
 }
@@ -123,6 +123,7 @@ std::vector<std::shared_ptr<Task> > TableScan::applyDynamicParallelization(size_
     t->setPlanId(_planId);
     t->setTXContext(_txContext);
     t->setId(_txContext.tid);
+    t->setEvent(_papiEvent);
 
     // set dependencies equal to current task
     for(auto d : _dependencies)
@@ -136,7 +137,16 @@ std::vector<std::shared_ptr<Task> > TableScan::applyDynamicParallelization(size_
   // create union and set dependencies
   auto unionall = std::make_shared<UnionAll>();
   unionall->setPlanOperationName("UnionAll");
-  
+  unionall->setOperatorId(opIdBase + "_union");
+  unionall->setProducesPositions(producesPositions);
+  unionall->setPriority(_priority);
+  unionall->setSessionId(_sessionId);
+  unionall->setPlanId(_planId);
+  unionall->setTXContext(_txContext);
+  unionall->setId(_txContext.tid);
+  unionall->setEvent(_papiEvent);
+
+
   for(auto t: tasks)
     unionall->addDependency(t);
 
