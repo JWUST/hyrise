@@ -1,0 +1,22 @@
+{
+"operators": {	     
+        "rload" : {
+          "type": "TableLoad",
+          "table": "hasher",
+          "filename": "tables/hash_table_test2.tbl"
+        },
+        "lload" : {
+          "type": "TableLoad",
+          "table": "hasher2",
+          "filename": "tables/hash_table_test.tbl"
+        },
+        "j": {
+            "type": "RadixJoin",
+            "bits1": 2,
+            "bits2": 1,
+	    "dynamic" : true,            
+ "fields": [0, 0]
+        }
+    },
+    "edges": [["lload", "j"], ["rload", "j"]]
+}

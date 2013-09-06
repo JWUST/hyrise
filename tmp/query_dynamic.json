@@ -1,8 +1,10 @@
 {
+"papi": "PAPI_L3_TCM",
 "operators": {
   "0" : {
     "type" : "TableLoad",
-    "filename" : "vbap.tbl"
+    "Table": "vbap",
+    "filename" : "vbap_base_project500.tbl"
   },
   "1" : {
       "type" : "TableScan",
@@ -12,8 +14,7 @@
       "value": 10 
   },
   "2" : {
-      "type" : "MaterializingScan",
-      "memcpy" : true
+      "type" : "NoOp"
   }
     },
     "edges" : [["0","1"],["1","2"]]

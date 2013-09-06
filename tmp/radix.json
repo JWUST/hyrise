@@ -1,0 +1,26 @@
+{
+   "operators": {
+        // Load the tables
+        "0": {
+            "type": "TableLoad",
+            "table": "vbap",
+            "filename" : "vbap_base_project100.tbl"  
+        },
+        "4": {
+            "type": "RadixJoin",
+            "bits1": 6,
+            "bits2": 5,
+            "dynamic": true,
+            "fields": [1,1] // "field_names": ["VBELN"], // Left and right
+        },
+"5": {
+   "type": "NoOp"
+}
+    },
+
+    "edges" : [
+        ["0","4"],
+        ["0","4"],
+["4","5"]
+    ]
+}
