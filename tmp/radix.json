@@ -8,7 +8,7 @@
         },
         "4": {
             "type": "RadixJoin",
-            "bits1": 6,
+            "bits1": 10,
             "bits2": 5,
             "dynamic": true,
             "fields": [1,1] // "field_names": ["VBELN"], // Left and right

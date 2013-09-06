@@ -63,6 +63,8 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
   auto rows_per_time_unit = 1000; // rows per ms. TODO this needs to be a configurable value
   auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
 
+  std::cout << " determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << std::endl;
+
   return num_tasks;
 }
 
@@ -101,14 +103,17 @@ std::vector<std::shared_ptr<Task> > RadixJoin::applyDynamicParallelization(size_
  
   // create tasks for radix join 
 
+  // restrict max degree of parallelism to 24, as parallel algo fpr prefix sums does not really scale well
+  uint maxdegree = 24;
+
   // create ops and edges for probe side
-  auto probe_side = build_probe_side(_operatorId + "_probe", _indexed_field_definition[0], dynamicCount, _bits1, _bits2, _dependencies[0]);
+  auto probe_side = build_probe_side(_operatorId + "_probe", _indexed_field_definition[0], std::min(dynamicCount, maxdegree), _bits1, _bits2, _dependencies[0]);
 
   for(auto task: probe_side)
     tasks.push_back(task);
 
   // create ops and edges for hash side
-  auto hash_side = build_hash_side(_operatorId + "_hash", _indexed_field_definition[1], dynamicCount, _bits1, _bits2, _dependencies[1]);
+  auto hash_side = build_hash_side(_operatorId + "_hash", _indexed_field_definition[1], std::min(dynamicCount, maxdegree), _bits1, _bits2, _dependencies[1]);
 
   for(auto task: hash_side)
     tasks.push_back(task);
@@ -134,6 +139,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::applyDynamicParallelization(size_
     j->setOperatorId(_operatorId + "_join");
     j->setBits1(_bits1);
     j->setBits2(_bits2);
+    j->setPlanOperationName("NestedLoopEquiJoin");
 
 
     for(int i = 0; i < partitions; i++){
@@ -163,6 +169,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::applyDynamicParallelization(size_
     // case 2: parallel join -> we do need a union and have to connect the output edges to union
     auto unionall = std::make_shared<UnionAll>();
     unionall->setOperatorId(opIdBase + "_union");
+    unionall->setPlanOperationName("UnionAll");
     copyTaskAttributesFromThis(unionall);
 
     // set union as dependency to all successors
@@ -183,6 +190,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::applyDynamicParallelization(size_
       j->setOperatorId(_operatorId + "_join_" + s.str());
       j->setBits1(_bits1);
       j->setBits2(_bits2);
+      j->setPlanOperationName("NestedLoopEquiJoin");
 
       /*
       first = (partitions / join_par) * i;
@@ -262,6 +270,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_probe_side(std::string pref
     h->setCount(probe_par);
     h->setPart(i);
     h->addField(field);
+    h->setPlanOperationName("Histogram");
     histograms.push_back(h);
     probe_side.push_back(h);
    
@@ -270,6 +279,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_probe_side(std::string pref
     p->setOperatorId(prefix + "_probe_prefixsum_" + s.str());
     p->setCount(probe_par);
     p->setPart(i);
+    p->setPlanOperationName("PrefixSum");
     prefixsums.push_back(p);
     probe_side.push_back(p);
 
@@ -280,6 +290,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_probe_side(std::string pref
     r->setCount(probe_par);
     r->setPart(i);
     r->addField(field);
+    r->setPlanOperationName("RadixCluster");
     radixclusters.push_back(r);
     probe_side.push_back(r);
 
@@ -289,15 +300,18 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_probe_side(std::string pref
   copyTaskAttributesFromThis(c);
   c->setOperatorId(prefix + "_probe_createradixtable");
   probe_side.push_back(c);
+  c->setPlanOperationName("CreateRadixTable");
   
   auto m = std::make_shared<MergePrefixSum>();
   copyTaskAttributesFromThis(m);
   m->setOperatorId(prefix + "_probe_mergeprefixsum");
+  m->setPlanOperationName("MergePrefixSum");
   probe_side.push_back(m);
 
   auto b = std::make_shared<Barrier>();
   copyTaskAttributesFromThis(b);
   b->setOperatorId(prefix + "_probe_barrier");
+  b->setPlanOperationName("Barrier");
   probe_side.push_back(b);
   b->addField(field);
 
@@ -365,6 +379,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_hash_side(std::string prefi
     h->setBits(bits1);
     h->setCount(hash_par);
     h->setPart(i);
+    h->setPlanOperationName("Histogram");
     h->addField(field);
     histograms_p1.push_back(h);
     hash_side.push_back(h);
@@ -374,6 +389,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_hash_side(std::string prefi
     p->setOperatorId(prefix + "_hash_prefixsum_1_" + s.str());
     p->setCount(hash_par);
     p->setPart(i);
+    p->setPlanOperationName("PrefixSum");
     prefixsums_p1.push_back(p);
     hash_side.push_back(p);
 
@@ -382,6 +398,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_hash_side(std::string prefi
     r->setOperatorId(prefix + "_hash_radixcluster_1_" + s.str());
     r->setBits(bits1);
     r->setCount(hash_par);
+    r->setPlanOperationName("RadixCluster");
     r->setPart(i);
     r->addField(field);
     radixclusters_p1.push_back(r);
@@ -394,6 +411,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_hash_side(std::string prefi
     h2->setBits2(bits2, bits1);
     h2->setCount(hash_par);
     h2->setPart(i);
+    h2->setPlanOperationName("Histogram2ndPass");
     histograms_p2.push_back(h2);
     hash_side.push_back(h2);
 
@@ -402,6 +420,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_hash_side(std::string prefi
     p2->setOperatorId(prefix + "_hash_prefixsum_2_" + s.str());
     p2->setCount(hash_par);
     p2->setPart(i);
+    p2->setPlanOperationName("PrefixSum");
     prefixsums_p2.push_back(p2);
     hash_side.push_back(p2);
 
@@ -412,6 +431,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_hash_side(std::string prefi
     r2->setBits2(bits2, bits1);
     r2->setCount(hash_par);
     r2->setPart(i);
+    r2->setPlanOperationName("Histogram");
     radixclusters_p2.push_back(r2);
     hash_side.push_back(r2);
 
@@ -421,19 +441,23 @@ std::vector<std::shared_ptr<Task> > RadixJoin::build_hash_side(std::string prefi
   copyTaskAttributesFromThis(c);
   c->setOperatorId(prefix + "_hash_createradixtable_1");
   hash_side.push_back(c);
+  c->setPlanOperationName("CreateRadixTable");
 
   auto c2 = std::make_shared<CreateRadixTable>();
   copyTaskAttributesFromThis(c2);
   c2->setOperatorId(prefix + "_hash_createradixtable_2");
   hash_side.push_back(c2);
+  c2->setPlanOperationName("CreateRadixTable");
   
   auto m = std::make_shared<MergePrefixSum>();
   copyTaskAttributesFromThis(m);
   m->setOperatorId(prefix + "_hash_mergeprefixsum");
+  m->setPlanOperationName("MergePrefixSum");
   hash_side.push_back(m);
 
   auto b = std::make_shared<Barrier>();
   copyTaskAttributesFromThis(b);
+  b->setPlanOperationName("Barrier");
   b->setOperatorId(prefix + "_hash_barrier");
   hash_side.push_back(b);
   b->addField(field);
