@@ -67,6 +67,8 @@ uint TableScan::determineDynamicCount(size_t maxTaskRunTime) {
   size_t tbl_size = inputTable->size();
   auto rows_per_time_unit = 100000; // rows per ms. TODO this needs to be a configurable value
   auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
+  std::cout << "TableScan: determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << std::endl;
+
   return num_tasks;
 }
 

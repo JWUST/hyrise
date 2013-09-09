@@ -129,7 +129,7 @@ void ResponseTask::operator()() {
 
         // Copy the complete result
         response["real_size"] = result->size();
-        response["rows"] = generateRowsJson(result, _transmitLimit);
+        //response["rows"] = generateRowsJson(result, _transmitLimit);
         response["header"] = json_header;
       }
 

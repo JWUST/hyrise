@@ -3,18 +3,14 @@
   "0" : {
     "type" : "TableLoad",
     "Table": "vbap",
-    "filename" : "vbap_base_project500.tbl"
+    "filename" : "vbap.tbl"
   },
   "1" : {
       "type" : "TableScan",
-      "expression": "hyrise::example",
-      "instances": 1000,
-      "column": 2,
-      "value": 10 
-  },
-  "2" : {
-      "type" : "NoOp"
+      "expression": "hyrise::stringequal",
+      "column": 3,
+      "value": "ABC" 
   }
     },
-    "edges" : [["0","1"],["1","2"]]
+    "edges" : [["0","1"]]
 }

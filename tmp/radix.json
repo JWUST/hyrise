@@ -4,7 +4,7 @@
         "0": {
             "type": "TableLoad",
             "table": "vbap",
-            "filename" : "vbap_base_project100.tbl"  
+            "filename" : "vbap_base_project1.tbl"  
         },
         "4": {
             "type": "RadixJoin",

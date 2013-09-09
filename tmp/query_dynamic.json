@@ -3,8 +3,8 @@
 "operators": {
   "0" : {
     "type" : "TableLoad",
-    "Table": "vbap",
-    "filename" : "vbap_base_project500.tbl"
+    "Table": "vbap100",
+    "filename" : "vbap_base_project100.tbl"
   },
   "1" : {
       "type" : "TableScan",
