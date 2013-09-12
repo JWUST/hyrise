@@ -2,8 +2,10 @@
 #include "access/GroupByScan.h"
 
 #include "access/system/QueryParser.h"
+#include "storage/ColumnMetadata.h"
 #include "storage/HashTable.h"
 #include "storage/PointerCalculator.h"
+#include "storage/OrderIndifferentDictionary.h"
 #include "storage/meta_storage.h"
 
 namespace hyrise {
@@ -76,10 +78,10 @@ void GroupByScan::setupPlanOperation() {
 
 void GroupByScan::executePlanOperation() {
   if ((_field_definition.size() != 0) && (input.numberOfHashTables() >= 1)) {
-    if (_field_definition.size() == 1)
-      return executeGroupBy<SingleAggregateHashTable, aggregate_single_hash_map_t, aggregate_single_key_t>();
-    else
-      return executeGroupBy<AggregateHashTable, aggregate_hash_map_t, aggregate_key_t>();
+      if (_field_definition.size() == 1)
+        return executeGroupBy<SingleAggregateHashTable, aggregate_single_hash_map_t, aggregate_single_key_t>();
+      else
+        return executeGroupBy<AggregateHashTable, aggregate_hash_map_t, aggregate_key_t>();      
   } else {
     auto resultTab = createResultTableLayout();
     resultTab->resize(1);
@@ -137,7 +139,7 @@ storage::atable_ptr_t GroupByScan::createResultTableLayout() {
   } else {
     vc.push_back(group_tab);
     vc.push_back(agg_tab);
-    storage::atable_ptr_t result = std::make_shared<MutableVerticalTable>(vc);
+    storage::atable_ptr_t result = std::make_shared<storage::MutableVerticalTable>(vc);
     return result;
   }
 }
@@ -177,6 +179,7 @@ void GroupByScan::writeGroupResult(storage::atable_ptr_t &resultTab,
 template<typename HashTableType, typename MapType, typename KeyType>
 void GroupByScan::executeGroupBy() {
   auto resultTab = createResultTableLayout();
+
   auto groupResults = getInputHashTable();
   // Allocate some memory for the result tab and resize the table
   resultTab->resize(groupResults->numKeys());
@@ -203,7 +206,8 @@ void GroupByScan::executeGroupBy() {
     }
     writeGroupResult(resultTab, pos_list, row);
     row++;
-  }
+  } 
+
   this->addResult(resultTab);
 }
 

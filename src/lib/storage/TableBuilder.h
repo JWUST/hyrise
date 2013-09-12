@@ -11,7 +11,7 @@
 
 #include "AbstractTable.h"
 
-
+namespace hyrise { namespace storage {
 
 class TableBuilderError : public std::runtime_error {
 public:
@@ -34,6 +34,7 @@ public:
     builder_param_member(std::string, name);
     builder_param_member(std::string, type);
     param(): name(), type() {};
+    param(std::string n, std::string t) : name(n), type(t) {}
   };
 
 
@@ -117,5 +118,6 @@ private:
 
 };
 
+}}
 
 #endif  // SRC_LIB_STORAGE_TABLEBUILDER_H_

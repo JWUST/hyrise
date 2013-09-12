@@ -13,6 +13,8 @@
 
 #include <testing/TableEqualityTest.h>
 
+namespace  hyrise { namespace storage {
+
 class VisibilityTests : public ::hyrise::Test {
 
 public:
@@ -40,8 +42,8 @@ public:
 		 one_row->setValue<hyrise_int_t>(1,0, 999);
 
 		 // Convert to store
-		 data = std::make_shared<Store>(TableBuilder::build(list));
-		 linxxxs = std::dynamic_pointer_cast<Store>(Loader::shortcuts::load("test/lin_xxxs.tbl"));
+		 data = std::make_shared<storage::Store>(TableBuilder::build(list));
+		 linxxxs = std::dynamic_pointer_cast<storage::Store>(Loader::shortcuts::load("test/lin_xxxs.tbl"));
 	}
 
 };
@@ -64,10 +66,8 @@ TEST_F(VisibilityTests, check_tx_prepare_commit) {
 
 	ASSERT_EQ(hyrise::tx::UNKNOWN, lc);
 	ASSERT_EQ(lc + 1, txmgr.tryPrepareCommit());
-	ASSERT_EQ(hyrise::tx::UNKNOWN, txmgr.tryPrepareCommit());
-	txmgr.commit(hyrise::tx::UNKNOWN);
+	txmgr.commit(ctx.tid);
 	ASSERT_EQ(lc + 1, txmgr.getLastCommitId());
-
 	ASSERT_ANY_THROW(txmgr.commit(hyrise::tx::UNKNOWN)) << "Double commit is not allowed";
 }
 
@@ -82,14 +82,14 @@ TEST_F(VisibilityTests, read_your_own_writes) {
 	auto lc = txmgr.getLastCommitId();
 
 	linxxxs->resizeDelta(1);
-	linxxxs->copyRowToDelta(one_row, 0, 0, tid_a, false);
+	linxxxs->copyRowToDelta(one_row, 0, 0, tid_a);
 
 	pos_list_t tmp(linxxxs->size(), 0);
 	size_t i=0;
 	std::generate(std::begin(tmp), std::end(tmp), [&i](){ return i++; });
 	linxxxs->validatePositions(tmp, lc, tid_a);
 	ASSERT_EQ(linxxxs->size(), tmp.size());
-	
+
 
 	// the second transaction should only see the base values
 	auto tmp2 = new pos_list_t(linxxxs->size(), 0);
@@ -112,19 +112,19 @@ TEST_F (VisibilityTests, read_writes_after_commit) {
 	auto lc = txmgr.getLastCommitId();
 
 	linxxxs->resizeDelta(1);
-	linxxxs->copyRowToDelta(one_row, 0, 0, tid_a, false);
+	linxxxs->copyRowToDelta(one_row, 0, 0, tid_a);
 
 	pos_list_t tmp(linxxxs->size(), 0);
 	size_t i=0;
 	std::generate(std::begin(tmp), std::end(tmp), [&i](){ return i++; });
 	linxxxs->validatePositions(tmp, lc, tid_a);
 	ASSERT_EQ(linxxxs->size(), tmp.size());
-	
+
 	auto next_cid = txmgr.prepareCommit();
 	ASSERT_EQ(next_cid, txmgr.getLastCommitId() + 1);
 
 	pos_list_t pos_tmp = {linxxxs->size() -1};
-	ASSERT_EQ(hyrise::tx::TX_CODE::TX_OK, linxxxs->updateCommitID(pos_tmp, next_cid, true));
+	ASSERT_EQ(hyrise::tx::TX_CODE::TX_OK, linxxxs->commitPositions(pos_tmp, next_cid, true));
 	txmgr.commit(tid_a);
 
 	// the second transaction should see all the values after the commit is done
@@ -149,18 +149,18 @@ TEST_F (VisibilityTests, read_writes_after_commit_old_cid) {
 	auto lc = txmgr.getLastCommitId();
 
 	linxxxs->resizeDelta(1);
-	linxxxs->copyRowToDelta(one_row, 0, 0, tid_a, false);
+	linxxxs->copyRowToDelta(one_row, 0, 0, tid_a);
 
 	pos_list_t tmp(linxxxs->size(), 0);
 	size_t i=0;
 	std::generate(std::begin(tmp), std::end(tmp), [&i](){ return i++; });
 	linxxxs->validatePositions(tmp, lc, tid_a);
 	ASSERT_EQ(linxxxs->size(), tmp.size());
-	
+
 	auto next_cid = txmgr.prepareCommit();
 	ASSERT_EQ(next_cid, txmgr.getLastCommitId() + 1);
 	pos_list_t pos_tmp = {linxxxs->size() -1};
-	ASSERT_EQ(hyrise::tx::TX_CODE::TX_OK, linxxxs->updateCommitID(pos_tmp, next_cid, true));
+	ASSERT_EQ(hyrise::tx::TX_CODE::TX_OK, linxxxs->commitPositions(pos_tmp, next_cid, true));
 	txmgr.commit(tid_a);
 
 	// the second transaction should not see all the values after the commit, due to old cid
@@ -173,3 +173,5 @@ TEST_F (VisibilityTests, read_writes_after_commit_old_cid) {
 	auto r = std::make_shared<PointerCalculator>(linxxxs, tmp2);
 	EXPECT_RELATION_EQ(Loader::shortcuts::load("test/lin_xxxs.tbl"), r);
 }
+
+}}

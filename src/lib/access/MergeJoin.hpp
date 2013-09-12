@@ -9,7 +9,6 @@
 #include "storage/AbstractTable.h"
 #include "storage/MutableVerticalTable.h"
 #include "storage/PointerCalculator.h"
-#include "storage/PointerCalculatorFactory.h"
 
 namespace hyrise {
 namespace access {
@@ -87,11 +86,11 @@ public:
     }
 
     std::vector<storage::atable_ptr_t> parts({
-      std::dynamic_pointer_cast<AbstractTable>(PointerCalculatorFactory::createPointerCalculatorNonRef(input.getTable(0), nullptr, left_pos)),
-      std::dynamic_pointer_cast<AbstractTable>(PointerCalculatorFactory::createPointerCalculatorNonRef(input.getTable(1), nullptr, right_pos))
+      std::dynamic_pointer_cast<AbstractTable>(PointerCalculator::create(input.getTable(0), left_pos)),
+      std::dynamic_pointer_cast<AbstractTable>(PointerCalculator::create(input.getTable(1), right_pos))
     });
 
-    addResult(std::make_shared<MutableVerticalTable>(parts));
+    addResult(std::make_shared<storage::MutableVerticalTable>(parts));
   }
 
   const std::string vname() {

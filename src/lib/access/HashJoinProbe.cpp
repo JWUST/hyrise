@@ -5,7 +5,6 @@
 
 #include "storage/HashTable.h"
 #include "storage/PointerCalculator.h"
-#include "storage/PointerCalculatorFactory.h"
 
 #include <log4cxx/logger.h>
 
@@ -101,13 +100,13 @@ storage::atable_ptr_t HashJoinProbe::buildResultTable(storage::pos_list_t *build
                                                       storage::pos_list_t *probeTablePosList) const {
   std::vector<storage::atable_ptr_t> parts;
 
-  auto buildTableRows = PointerCalculatorFactory::createPointerCalculatorNonRef(getBuildTable(), nullptr, buildTablePosList);
-  auto probeTableRows = PointerCalculatorFactory::createPointerCalculatorNonRef(getProbeTable(), nullptr, probeTablePosList);
+  auto buildTableRows = PointerCalculator::create(getBuildTable(), buildTablePosList);
+  auto probeTableRows = PointerCalculator::create(getProbeTable(), probeTablePosList);
 
   parts.push_back(probeTableRows);
   parts.push_back(buildTableRows);
 
-  storage::atable_ptr_t result = std::make_shared<MutableVerticalTable>(parts);
+  storage::atable_ptr_t result = std::make_shared<storage::MutableVerticalTable>(parts);
   return result;
 }
 

@@ -14,6 +14,8 @@
 #include "storage/TableGenerator.h"
 #include "storage/MutableVerticalTable.h"
 
+using namespace hyrise;
+
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("hyrise.io.Loader"));
 
 param_ref_member_impl(Loader::params, AbstractInput, Input)
@@ -104,7 +106,7 @@ std::shared_ptr<AbstractTable> Loader::load(const params &args) {
 
   std::shared_ptr<AbstractTable>
   result, //initialize empty
-  table = std::make_shared<MutableVerticalTable>(*meta, nullptr, 0, false, factory, args.getCompressed());
+      table = std::make_shared<storage::MutableVerticalTable>(*meta, nullptr, 0, false, factory, args.getCompressed());
 
   LOG4CXX_DEBUG(logger, "Loading data");
   try {
@@ -129,15 +131,15 @@ std::shared_ptr<AbstractTable> Loader::load(const params &args) {
   LOG4CXX_DEBUG(logger, "Data done");
 
   if (!args.getModifiableMutableVerticalTable() && input->needs_store_wrap()) {
-    std::shared_ptr<Store> s = std::make_shared<Store>(result);
+    auto s = std::make_shared<storage::Store>(result);
     TableMerger *merger = new TableMerger(new DefaultMergeStrategy(), new SequentialHeapMerger(), args.getCompressed());
     s->setMerger(merger);
     s->merge();
     result = s;
   }
-  
+
   if (!args.getModifiableMutableVerticalTable() && args.getReturnsMutableVerticalTable()) {
-    table = std::dynamic_pointer_cast<Store>(result)->getMainTables()[0];
+    table = std::dynamic_pointer_cast<storage::Store>(result)->getMainTables()[0];
     result = table;
   }
 

@@ -7,7 +7,6 @@
 #include "storage/ColumnMetadata.h"
 #include "storage/MutableVerticalTable.h"
 #include "storage/PointerCalculator.h"
-#include "storage/PointerCalculatorFactory.h"
 
 namespace hyrise {
 namespace access {
@@ -68,10 +67,10 @@ void MultiplyRefField::executeMultiply() {
 		}
 	}
 
-	auto left = PointerCalculatorFactory::createPointerCalculator(getInputTable(), nullptr, pos);
+	auto left = PointerCalculator::create(getInputTable(), pos);
 
 	std::vector<storage::atable_ptr_t> vc({left, result});
-	storage::atable_ptr_t tt = std::make_shared<MutableVerticalTable>(vc);
+	storage::atable_ptr_t tt = std::make_shared<storage::MutableVerticalTable>(vc);
 	addResult(tt);
 }
 

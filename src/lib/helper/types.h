@@ -12,8 +12,9 @@ class AbstractResource;
 class AbstractTable;
 class AbstractIndex;
 class AbstractHashTable;
-class Store;
-class MutableVerticalTable;
+class AbstractDictionary;
+
+
 class PointerCalculator;
 
 namespace hyrise {
@@ -24,11 +25,14 @@ namespace tx {
 typedef int64_t transaction_id_t;
 typedef int64_t transaction_cid_t;
 
-static const transaction_id_t START_TID = 1;
+static const transaction_id_t MERGE_TID = 1;
+	// the merge needs its own TID so that it is isolated from the other transactions
+static const transaction_id_t START_TID = 2;
 static const transaction_id_t MAX_TID = std::numeric_limits<transaction_id_t>::max();
 
 static const transaction_id_t UNKNOWN = 0;
 static const transaction_cid_t UNKNOWN_CID = 0;
+static const transaction_cid_t INF_CID = std::numeric_limits<transaction_cid_t>::max();
 
 enum class TX_CODE {
 	TX_OK,
@@ -45,9 +49,14 @@ typedef std::unique_ptr<AbstractExpression> expression_uptr_t;
 
 namespace storage {
 class SimpleStore;
+class MutableVerticalTable;
+class Store;
 
 typedef std::shared_ptr<AbstractResource> aresource_ptr_t;
 typedef std::shared_ptr<const AbstractResource> c_aresource_ptr_t;
+
+typedef std::shared_ptr<AbstractDictionary> adict_ptr_t;
+typedef std::shared_ptr<const AbstractDictionary> c_adict_ptr_t;
 
 typedef std::shared_ptr<AbstractTable> atable_ptr_t;
 typedef std::shared_ptr<const AbstractTable> c_atable_ptr_t;

@@ -2,7 +2,7 @@
 #include "access/ExpressionScan.h"
 
 #include "access/system/QueryParser.h"
-
+#include "storage/OrderIndifferentDictionary.h"
 #include "storage/MutableVerticalTable.h"
 #include "storage/Table.h"
 
@@ -62,7 +62,7 @@ void ExpressionScan::executePlanOperation() {
   vc.push_back(std::const_pointer_cast<AbstractTable>(input.getTable(0)));
   vc.push_back(exp_result);
 
-  addResult(std::make_shared<const MutableVerticalTable>(vc));
+  addResult(std::make_shared<const storage::MutableVerticalTable>(vc));
 }
 
 const std::string ExpressionScan::vname() {

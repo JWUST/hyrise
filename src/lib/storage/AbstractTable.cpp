@@ -12,9 +12,13 @@
 #include <storage/TableDiff.h>
 #include <storage/TableUtils.h>
 
+#include <helper/locking.h>
+
 #include <fstream>
 
 #include <iostream>
+
+using namespace hyrise::storage;
 
 hyrise::storage::atable_ptr_t AbstractTable::copy_structure(const field_list_t *fields, const bool reuse_dict, const size_t initial_size, const bool with_containers, const bool compressed) const {
   std::vector<const ColumnMetadata *> metadata;
@@ -95,14 +99,6 @@ for (const field_t & field: *fields) {
   return valueIdList;
 }
 
-void AbstractTable::setGeneration(const unsigned generation) {
-  _generation = generation;
-}
-
-unsigned AbstractTable::generation() const {
-  return _generation;
-}
-
 std::string AbstractTable::printValue(const size_t column, const size_t row) const {
   return HyriseHelper::castValueByColumnRow<std::string>(this, column, row);
 }
@@ -120,9 +116,6 @@ void AbstractTable::copyValueFrom(const hyrise::storage::c_atable_ptr_t& source,
     case StringType:
       copyValueFrom<hyrise_string_t>(source, src_col, src_row, dst_col, dst_row);
       break;
-
-    default:
-      break;
   }
 }
 
@@ -138,9 +131,6 @@ void AbstractTable::copyValueFrom(const hyrise::storage::c_atable_ptr_t& source,
 
     case StringType:
       setValue<hyrise_string_t>(dst_col, dst_row, source->getValueForValueId<hyrise_string_t>(src_col, vid));
-      break;
-
-    default:
       break;
   }
 }
@@ -317,4 +307,15 @@ const attr_vectors_t AbstractTable::getAttributeVectors(size_t column) const {
 
 void AbstractTable::debugStructure(size_t level) const {
   std::cout << std::string(level, '\t') << "AbstractTable " << this << std::endl;
+}
+
+unique_id AbstractTable::getUuid() const {
+  return _uuid;
+}
+
+void AbstractTable::setUuid(unique_id u) {
+  if (u.is_nil()) {
+    _uuid = unique_id::create();
+  }
+  _uuid = u;
 }

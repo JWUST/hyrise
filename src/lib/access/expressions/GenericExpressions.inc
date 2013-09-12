@@ -27,7 +27,7 @@
 
 #define EXPR_EXTRACT_VID_AND_MAP(r, data, seq_field) \
 	auto BOOST_PP_CAT(vid_v_, BOOST_PP_SEQ_ELEM(0,seq_field)) = _store->getValueIdForValue< BOOST_PP_SEQ_ELEM(1,seq_field) >( BOOST_PP_SEQ_ELEM(0, seq_field), BOOST_PP_CAT(v_, BOOST_PP_SEQ_ELEM(0, seq_field)), false, part).valueId; \
-	register auto BOOST_PP_CAT(o, BOOST_PP_SEQ_ELEM(0,seq_field)) = BOOST_PP_CAT(_of_, BOOST_PP_SEQ_ELEM(0,seq_field))[part]; \
+	auto BOOST_PP_CAT(o, BOOST_PP_SEQ_ELEM(0,seq_field)) = BOOST_PP_CAT(_of_, BOOST_PP_SEQ_ELEM(0,seq_field))[part]; \
 	auto BOOST_PP_CAT(ve_, BOOST_PP_SEQ_ELEM(0,seq_field)) = EXPR_DATA_VECTOR_NAME(BOOST_PP_SEQ_ELEM(0,seq_field))[part];
 
 #define EXPR_COMPARE_FIELD(name, cmp, row) BOOST_PP_CAT(vid_v_,name) cmp BOOST_PP_CAT(ve_,name)->getRef(BOOST_PP_CAT(o,name), row)
@@ -43,7 +43,9 @@
 	size_t lower = 0; \
 	pl->clear(); \
 	const auto& first_vector = EXPR_DATA_VECTOR_NAME(EXPR_FIELD_VAL(seq_of_fields, 0)); \
-	for(size_t part =0, part_size = first_vector.size(); part < part_size; ++part) {\
+	size_t part_size = first_vector.size();\
+	part_size -= _with_delta ? 0 : 1;\
+	for(size_t part =0; part < part_size; ++part) {\
 		auto rows_in_part = first_vector[part]->size(); \
 		BOOST_PP_SEQ_FOR_EACH(EXPR_EXTRACT_VID_AND_MAP,, seq_of_fields);\
 		if (stop < (rows_in_part + lower)) \
@@ -73,11 +75,12 @@
 		return the_result;\
 	}\
 	void name::walk(const std::vector<hyrise::storage::c_atable_ptr_t> &l) {\
-		_store = std::dynamic_pointer_cast<const Store>(l[0]);\
+		_store = std::dynamic_pointer_cast<const storage::Store>(l[0]);\
 		BOOST_PP_SEQ_FOR_EACH(EXPRESSION_EXTRACT_AV_AND_OFFSET,,BOOST_PP_SEQ_TRANSFORM(EXPR_TRANSFORM_FIELD_NAMES,,seq_of_fields));\
 	}\
 	std::unique_ptr<name> name::parse(const Json::Value& val) {\
 		auto res = make_unique<name>();\
+		if (val.isMember("withDelta")) res->_with_delta = val["withDelta"].asBool();\
 		BOOST_PP_SEQ_FOR_EACH(EXPR_EXTRACT_FFROM_JSON, res, seq_of_fields);\
 		return res;\
 	}\
@@ -87,6 +90,7 @@
 		using VectorType = FixedLengthVector<value_id_t>;\
 		using SharedVectorType = std::shared_ptr<VectorType>;\
 		hyrise::storage::c_store_ptr_t _store;\
+		bool _with_delta=true;\
 		BOOST_PP_SEQ_FOR_EACH(EXPRESSION_ADD_REFERENCE_FIELD,,seq_of_fields);\
 	public:\
 		name(); \

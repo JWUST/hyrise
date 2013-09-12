@@ -55,6 +55,7 @@ class EqualsExpression : public SimpleFieldExpression {
   }
 };
 
+
 /**
  * Equals Expressions that uses directly the raw value instead of
  * working with value ids of the dictionary encoded column.

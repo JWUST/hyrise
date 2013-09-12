@@ -16,17 +16,14 @@
 #include <string>
 
 #include "helper/types.h"
+#include "helper/locking.h"
+#include "helper/unique_id.h"
 
-#include <storage/AbstractResource.h>
-#include <storage/storage_types.h>
-#include <storage/ColumnMetadata.h>
-#include <storage/ValueIdMap.hpp>
+#include "storage/AbstractResource.h"
+#include "storage/BaseDictionary.h"
+#include "storage/storage_types.h"
 
 
-class Table;
-class Store;
-
-class MutableVerticalTable;
 class ColumnMetadata;
 class AbstractDictionary;
 class AbstractAttributeVector;
@@ -35,6 +32,7 @@ typedef struct {
   std::shared_ptr<AbstractAttributeVector> attribute_vector;
   size_t attribute_offset;
 } attr_vector_offset_t;
+
 typedef std::vector<attr_vector_offset_t> attr_vectors_t;
 
 class StorageException : public std::runtime_error {
@@ -61,39 +59,9 @@ public:
  */
 class AbstractTable : public AbstractResource {
 
-  friend class Store;
-
-private:
-
-  unsigned _generation;
-  
 public:
 
   typedef std::shared_ptr<AbstractDictionary> SharedDictionaryPtr;
-
-  /**
-   * Constructor.
-   */
-  AbstractTable() : _generation(0) {}
-
-
-  /**
-   * Destructor.
-   */
-  virtual ~AbstractTable() {}
-
-  /**
-   * Returns the generation value.
-   */
-  unsigned generation() const;
-
-
-  /**
-   * Sets the generation value.
-   *
-   * @param generation The generation.
-   */
-  void setGeneration(const unsigned generation);
 
   /**
    * Copy the table's structure.
@@ -108,7 +76,7 @@ public:
    * @param with_containers Only used by derived classes.
    * @param compressed      Sets the compressed storage for the new table
    */
-  virtual hyrise::storage::atable_ptr_t copy_structure(const field_list_t *fields = nullptr, const bool reuse_dict = false, const size_t initial_size = 0, const bool with_containers = true, const bool compressed = false) const;
+  virtual hyrise::storage::atable_ptr_t copy_structure(const field_list_t *fields = nullptr, bool reuse_dict = false, size_t initial_size = 0, bool with_containers = true, bool compressed = false) const;
 
 
   /**
@@ -122,7 +90,7 @@ public:
    * @param initial_size    Initial size of the returned table (default=0).
    * @param with_containers Only used by derived classes.
    */
-  hyrise::storage::atable_ptr_t copy_structure_modifiable(const field_list_t *fields = nullptr, const size_t initial_size = 0, const bool with_containers = true) const;
+  virtual hyrise::storage::atable_ptr_t copy_structure_modifiable(const field_list_t *fields = nullptr, size_t initial_size = 0, bool with_containers = true) const;
 
 
   /**
@@ -133,7 +101,7 @@ public:
    * @param row    Row from which to extract the ValueIDs.
    * @param fields List of respected fields (all if empty).
    */
-  ValueIdList copyValueIds(const size_t row, const field_list_t *fields = nullptr) const;
+  ValueIdList copyValueIds(size_t row, const field_list_t *fields = nullptr) const;
 
 
   /**
@@ -145,10 +113,10 @@ public:
    * @param row      Row in that column (default=0).
    * @param table_id ID of the table from which to extract (default=0).
    */
-  virtual const ColumnMetadata *metadataAt(const size_t column, const size_t row = 0, const table_id_t table_id = 0) const = 0;
+  virtual const ColumnMetadata *metadataAt(size_t column, size_t row = 0, table_id_t table_id = 0) const = 0;
 
   /**
-   * Returs a list of references to metadata of this table. 
+   * Returs a list of references to metadata of this table.
    *
    * The list is newly created for all calls to this method, but the
    * references stay the same. Thus calling this method incurrs a
@@ -164,7 +132,7 @@ public:
    * @param row      Row in that column (default=0).
    * @param table_id ID of the table from which to extract (default=0).
    */
-  virtual const SharedDictionaryPtr& dictionaryAt(const size_t column, const size_t row = 0, const table_id_t table_id = 0) const = 0;
+  virtual const SharedDictionaryPtr& dictionaryAt(size_t column, size_t row = 0, table_id_t table_id = 0) const = 0;
 
 
   /**
@@ -174,7 +142,7 @@ public:
    * @param column   Column from which to extract the dictionary.
    * @param table_id ID of the table from which to extract.
    */
-  virtual const SharedDictionaryPtr& dictionaryByTableId(const size_t column, const table_id_t table_id) const = 0;
+  virtual const SharedDictionaryPtr& dictionaryByTableId(size_t column, table_id_t table_id) const = 0;
 
 
   /**
@@ -193,7 +161,7 @@ public:
    * @param row      Row in that column (default=0).
    * @param table_id ID of the table (default=0).
    */
-  virtual void setDictionaryAt(SharedDictionaryPtr dict, const size_t column, const size_t row = 0, const table_id_t table_id = 0) = 0;
+  virtual void setDictionaryAt(SharedDictionaryPtr dict, size_t column, size_t row = 0, table_id_t table_id = 0) = 0;
 
 
   /**
@@ -202,7 +170,7 @@ public:
    *
    * @param column Column from which to extract the type.
    */
-  DataType typeOfColumn(const size_t column) const;
+  DataType typeOfColumn(size_t column) const;
 
 
   /**
@@ -230,7 +198,7 @@ public:
    *
    * @param column Number of the column as numeric value.
    */
-  std::string nameOfColumn(const size_t column) const;
+  std::string nameOfColumn(size_t column) const;
 
 
   /**
@@ -240,7 +208,7 @@ public:
    * @param column Column number of the cell.
    * @param row    Row number of the cell.
    */
-  virtual ValueId getValueId(const size_t column, const size_t row) const = 0;
+  virtual ValueId getValueId(size_t column, size_t row) const = 0;
 
 
   /**
@@ -251,7 +219,7 @@ public:
    * @param row     Row number of the cell.
    * @param valueId New value-ID of the cell.
    */
-  virtual void setValueId(const size_t column, const size_t row, const ValueId valueId);
+  virtual void setValueId(size_t column, size_t row, const ValueId valueId);
 
 
   /**
@@ -260,7 +228,7 @@ public:
    *
    * @param nr_of_values   Total number of values that must fit.
    */
-  virtual void reserve(const size_t nr_of_values);
+  virtual void reserve(size_t nr_of_values);
 
   /**
    * Resize the table to the given number of rows based on the
@@ -269,7 +237,7 @@ public:
    *
    * @param rows           The new number of rows in this table
    */
-  virtual void resize(const size_t rows);
+  virtual void resize(size_t rows);
 
   /**
    * Returns the number of partitions in this table.
@@ -284,13 +252,13 @@ public:
    *
    * @param slice The slice of interest.
    */
-  virtual size_t partitionWidth(const size_t slice) const = 0;
+  virtual size_t partitionWidth(size_t slice) const = 0;
 
 
   /**
    * Prints the table
    */
-  virtual void print(const size_t limit = (size_t) -1) const;
+  virtual void print(size_t limit = (size_t) -1) const;
 
   /**
    * Returns the number of horizontal subtables.
@@ -308,7 +276,7 @@ public:
    * @param table_id ID of the table containing the value (default=0).
    */
   template <typename T>
-  inline ValueId getValueIdForValue(const size_t column, const T &value, const bool create = false, const table_id_t table_id = 0) const {
+  inline ValueId getValueIdForValue(const size_t column, const T value, const bool create = false, const table_id_t table_id = 0) const {
 
     // FIXME here should be some basic type checking, at least we should check with a better cast and catch the std::exception
     // FIXME horizontal containers will go down here, needs a row index, can be default 0
@@ -324,7 +292,7 @@ public:
       /*if (map->isOrdered()) {
         throw std::runtime_error("Cannot insert value in an ordered dictionary");
       } else {
-        
+
       }*/
     } else {
       // TODO: We should document that INT_MAX is an invalid document ID
@@ -363,7 +331,7 @@ public:
 
       valueId.valueId = map->addValue(value);
     } else {
-      valueId.valueId = INT_MAX;
+      valueId.valueId = std::numeric_limits<value_id_t>::max();
     }
 
     return valueId;
@@ -391,8 +359,20 @@ public:
    * @param value  Value to be assigned to the cell.
    */
   template <typename T>
-  void setValue(const size_t column, const size_t row, const T &value) {
-    ValueId valueId = getValueIdForValue(column, value, true);
+  void setValue(size_t column, size_t row, const T &value) {
+    const auto& map = std::dynamic_pointer_cast<BaseDictionary<T>>(dictionaryAt(column, row));
+
+    ValueId valueId;
+    valueId.table = 0;
+
+    if (map->valueExists(value)) {
+      valueId.valueId = map->getValueIdForValue(value);
+    } else {
+      valueId.valueId = map->addValue(value);
+    }
+
+    //return valueId;
+    //ValueId valueId = getValueIdForValue(column, value, true);
     setValueId(column, row, valueId);
 
   }
@@ -454,7 +434,7 @@ public:
    * @param column Column of the cell containing the value.
    * @param row    Row of the cell containing the value.
    */
-  std::string printValue(const size_t column, const size_t row) const;
+  std::string printValue(size_t column, size_t row) const;
 
 
   /**
@@ -482,7 +462,7 @@ public:
    * @param dst_col Column of the target cell.
    * @param dst_row Row of the target cell.
    */
-  void copyValueFrom(const hyrise::storage::c_atable_ptr_t& source, const size_t src_col, const size_t src_row, const size_t dst_col, const size_t dst_row);
+  void copyValueFrom(const hyrise::storage::c_atable_ptr_t& source, size_t src_col, size_t src_row, size_t dst_col, size_t dst_row);
 
 
   /**
@@ -494,7 +474,7 @@ public:
    * @param dst_col Column of the target cell.
    * @param dst_row Row of the target cell.
    */
-  void copyValueFrom(const hyrise::storage::c_atable_ptr_t& source, const size_t src_col, const ValueId vid, const size_t dst_col, const size_t dst_row);
+  void copyValueFrom(const hyrise::storage::c_atable_ptr_t& source, size_t src_col, ValueId vid, size_t dst_col, size_t dst_row);
 
 
   /**
@@ -506,7 +486,7 @@ public:
    * @param copy_values Also copy the values (default=true).
    * @param use_memcpy  Use memcpy for the copying (default=true).
    */
-  void copyRowFrom(const hyrise::storage::c_atable_ptr_t& source, const size_t src_row, const size_t dst_row, const bool copy_values = true, const bool use_memcpy = true);
+  void copyRowFrom(const hyrise::storage::c_atable_ptr_t& source, size_t src_row, size_t dst_row, bool copy_values = true, bool use_memcpy = true);
 
 
   /**
@@ -532,7 +512,7 @@ public:
    */
   virtual hyrise::storage::atable_ptr_t copy() const = 0;
 
-  /** 
+  /**
   * get underlying attribute vectors for column
   *
   * This method returns a struct containing the reference to the attribute
@@ -542,8 +522,14 @@ public:
   virtual const attr_vectors_t getAttributeVectors(size_t column) const;
 
   virtual void debugStructure(size_t level=0) const;
-  
+
+  unique_id getUuid() const;
+
+  void setUuid(unique_id = unique_id());
+
+ private:
+  // Global unique identifier for this object
+  unique_id _uuid;
 };
 
 #endif  // SRC_LIB_STORAGE_ABSTRACTTABLE_H_
-

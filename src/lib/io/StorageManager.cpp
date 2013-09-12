@@ -19,6 +19,7 @@
 #include "io/CSVLoader.h"
 #include "storage/AbstractIndex.h"
 #include "storage/AbstractTable.h"
+#include "storage/ColumnMetadata.h"
 #include "storage/TableBuilder.h"
 
 namespace hyrise {
@@ -86,7 +87,7 @@ std::shared_ptr<AbstractTable> StorageManager::getTable(std::string name) {
 }
 
 void StorageManager::removeTable(std::string name) {
-  if (get<AbstractTable>(name))
+  if (exists(name))
     remove(name);
 }
 

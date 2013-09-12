@@ -2,8 +2,9 @@
 #ifndef SRC_LIB_STORAGE_BITCOMPRESSEDVECTOR_H_
 #define SRC_LIB_STORAGE_BITCOMPRESSEDVECTOR_H_
 
-#include <math.h>
-#include <stdint.h>
+#include <cassert>
+#include <cmath>
+#include <cstdint>
 #include <cstring>
 
 #include <mutex>
@@ -72,15 +73,15 @@ public:
     checkAccess(column, row);
 
     T result;
-    register auto offset = _blockOffset(row);
-    register auto colOffset = _offsetForColumn(column);
-    register auto block = _blockPosition(row) + (offset + colOffset) / _bit_width;
+    auto offset = _blockOffset(row);
+    auto colOffset = _offsetForColumn(column);
+    auto block = _blockPosition(row) + (offset + colOffset) / _bit_width;
 
     // Adjust the column offset to the new block
     colOffset = (offset + colOffset) % _bit_width;
 
     uint64_t bounds = _bit_width - colOffset;
-    register uint64_t baseMask = (1ull << _bits[column]) - 1ull;
+    uint64_t baseMask = (1ull << _bits[column]) - 1ull;
 
     result = (_data[block] >> colOffset) & baseMask;
 
@@ -95,16 +96,16 @@ public:
   void set(size_t column, size_t row, T value) {
     checkAccess(column, row);
 
-    register auto offset = _blockOffset(row);
-    register auto colOffset = _offsetForColumn(column);
-    register auto block = _blockPosition(row) + (offset + colOffset) / _bit_width;
+    auto offset = _blockOffset(row);
+    auto colOffset = _offsetForColumn(column);
+    auto block = _blockPosition(row) + (offset + colOffset) / _bit_width;
 
     // Adjust the column offset to the new block
     colOffset = (offset + colOffset) % _bit_width;
 
-    register uint64_t bounds = _bit_width - colOffset;
-    register uint64_t baseMask = (1ull << _bits[column]) - 1ull;
-    register uint64_t mask = ~(baseMask << colOffset);
+    uint64_t bounds = _bit_width - colOffset;
+    uint64_t baseMask = (1ull << _bits[column]) - 1ull;
+    uint64_t mask = ~(baseMask << colOffset);
 
     _data[block] &= mask;
     _data[block] |= ((uint64_t) value & baseMask) << colOffset;

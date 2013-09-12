@@ -9,7 +9,7 @@
 
 #include "access/system/PlanOperation.h"
 #include "access/system/OutputTask.h"
-
+#include "io/TransactionManager.h"
 #include "helper/PapiTracer.h"
 
 #include "net/AsyncConnection.h"
@@ -43,11 +43,19 @@ struct json_functor {
 };
 
 template<typename T>
-Json::Value generateRowsJsonT(const T& table, const size_t transmitLimit) {
+Json::Value generateRowsJsonT(const T& table, const size_t transmitLimit, const size_t transmitOffset) {
   hyrise::storage::type_switch<hyrise_basic_types> ts;
   json_functor<T> fun(table);
   Json::Value rows(Json::arrayValue);
   for (size_t row = 0; row < table->size(); ++row) {
+
+    // Align offset
+    if (row < transmitOffset)
+      continue;
+
+    // Break if limit reached
+    if (transmitLimit > 0 && row == (transmitOffset + transmitLimit))
+      break;
 
     fun.row = row;
     Json::Value json_row(Json::arrayValue);
@@ -57,18 +65,16 @@ Json::Value generateRowsJsonT(const T& table, const size_t transmitLimit) {
     }
     rows.append(json_row);
 
-    if (transmitLimit > 0 && row == transmitLimit)
-      break;
   }
   return rows;
 }
 
 Json::Value generateRowsJson(const std::shared_ptr<const AbstractTable>& table,
-                             const size_t transmitLimit) {
+                             const size_t transmitLimit, const size_t transmitOffset) {
   if (const auto& store = std::dynamic_pointer_cast<const hyrise::storage::SimpleStore>(table)) {
-      return generateRowsJsonT(store, transmitLimit);
+      return generateRowsJsonT(store, transmitLimit, transmitOffset);
   } else {
-      return generateRowsJsonT(table, transmitLimit);
+      return generateRowsJsonT(table, transmitLimit, transmitOffset);
   }
 }
 
@@ -78,13 +84,17 @@ const std::string ResponseTask::vname() {
 
 void ResponseTask::registerPlanOperation(const std::shared_ptr<PlanOperation>& planOp) {
   performance_attributes_t* perf = new performance_attributes_t;
-  planOp->setPerformanceData(perf);
+  std::vector<hyrise_int_t>* genKeys = new std::vector<hyrise_int_t>;
 
-  const auto responseTaskPtr = std::dynamic_pointer_cast<ResponseTask>(shared_from_this()); 
+  planOp->setPerformanceData(perf);
+  planOp->setGeneratedKeysData(genKeys);
+
+  const auto responseTaskPtr = std::dynamic_pointer_cast<ResponseTask>(shared_from_this());
   planOp->setResponseTask(responseTaskPtr);
 
   perfMutex.lock();
   performance_data.push_back(std::unique_ptr<performance_attributes_t>(perf));
+  _generatedKeyRefs.push_back(std::unique_ptr<std::vector<hyrise_int_t>>(genKeys));
   perfMutex.unlock();
 }
 
@@ -119,6 +129,10 @@ void ResponseTask::operator()() {
     const auto& result = predecessor->getResultTable();
 
     if (getState() != OpFail) {
+      if (tx::TransactionManager::isRunningTransaction(_txContext.tid)) {
+        response["session_context"] = Json::Value(_txContext.tid);
+      }
+
       if (result) {
         // Make header
         Json::Value json_header(Json::arrayValue);
@@ -129,7 +143,7 @@ void ResponseTask::operator()() {
 
         // Copy the complete result
         response["real_size"] = result->size();
-        //response["rows"] = generateRowsJson(result, _transmitLimit);
+        response["rows"] = generateRowsJson(result, _transmitLimit, _transmitOffset);
         response["header"] = json_header;
       }
 
@@ -161,9 +175,20 @@ void ResponseTask::operator()() {
       json_perf.append(responseElement);
 
       response["performanceData"] = json_perf;
-    } 
+
+      Json::Value jsonKeys(Json::arrayValue);
+      for( const auto& x : _generatedKeyRefs) {
+        for(const auto& key : *x) {
+          Json::Value element(key);
+          jsonKeys.append(element);
+        }
+      }
+      response["generatedKeys"] = jsonKeys;
+      response["affectedRows"] = Json::Value(_affectedRows);
+
+    }
     LOG4CXX_DEBUG(_logger, "Table Use Count: " << result.use_count());
-  } 
+  }
 
   if (!_error_messages.empty()) {
     Json::Value errors;
@@ -172,7 +197,7 @@ void ResponseTask::operator()() {
     }
     response["error"] = errors;
   }
-  
+
   connection->respond(response.toStyledString());
 }
 

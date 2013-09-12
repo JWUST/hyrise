@@ -5,7 +5,6 @@
 #include "access/system/QueryParser.h"
 
 #include "storage/PointerCalculator.h"
-#include "storage/PointerCalculatorFactory.h"
 
 namespace hyrise {
 namespace access {
@@ -55,7 +54,7 @@ void JoinScan::executePlanOperation() {
   vc.push_back(left);
   vc.push_back(right);
 
-  storage::atable_ptr_t result = std::make_shared<MutableVerticalTable>(vc);
+  storage::atable_ptr_t result = std::make_shared<storage::MutableVerticalTable>(vc);
   addResult(result);
 }
 

@@ -11,6 +11,8 @@
 #include "storage/Store.h"
 #include "storage/TableRangeView.h"
 
+using namespace hyrise::storage;
+
 template <typename T>
 T* copy_vec(T* orig) {
   if (orig == nullptr) return nullptr;
@@ -55,7 +57,7 @@ PointerCalculator::PointerCalculator(const PointerCalculator& other) : table(oth
 }
 
 hyrise::storage::atable_ptr_t PointerCalculator::copy() const {
-  return std::make_shared<PointerCalculator>(table, fields, pos_list);
+  return create(table, fields, pos_list);
 }
 
 PointerCalculator::~PointerCalculator() {
@@ -213,28 +215,6 @@ void PointerCalculator::print(const size_t limit) const {
   PrettyPrinter::print(this, std::cout, "unnamed pointer calculator", limit);
 }
 
-std::string PointerCalculator::printValue(const size_t column, const size_t row) const {
-  size_t actual_column, actual_row;
-
-  if (pos_list) {
-    actual_row = pos_list->at(row);
-  } else {
-    actual_row = row;
-  }
-
-  if (fields) {
-    actual_column = fields->at(column);
-  } else {
-    actual_column = column;
-  }
-
-  return table->printValue(actual_column, actual_row);
-}
-
-void PointerCalculator::sortDictionary() {
-  throw std::runtime_error("Can't sort PointerCalculator dictionary");
-}
-
 size_t PointerCalculator::getTableRowForRow(const size_t row) const
 {
   size_t actual_row;
@@ -344,7 +324,7 @@ std::shared_ptr<PointerCalculator> PointerCalculator::intersect(const std::share
                         std::back_inserter(*result));
 
   assert((other->table == this->table) && "Should point to same table");
-  return std::make_shared<PointerCalculator>(table, result, fields);
+  return create(table, result, fields);
 }
 
 
@@ -356,12 +336,12 @@ std::shared_ptr<PointerCalculator> PointerCalculator::unite(const std::shared_pt
     std::set_union(pos_list->begin(), pos_list->end(),
                    other->pos_list->begin(), other->pos_list->end(),
                    result->begin());
-    return std::make_shared<PointerCalculator>(table, result, copy_vec(fields));
+    return create(table, result, copy_vec(fields));
   } else {
     pos_list_t* positions = nullptr;
     if (pos_list == nullptr) { positions = other->pos_list; }
     if (other->pos_list == nullptr) { positions = pos_list; }
-    return std::make_shared<PointerCalculator>(table, copy_vec(positions), copy_vec(fields));
+    return create(table, copy_vec(positions), copy_vec(fields));
   }
 }
 
@@ -384,7 +364,6 @@ std::shared_ptr<PointerCalculator> PointerCalculator::concatenate_many(pc_vector
   auto result = new pos_list_t;
   result->reserve(sz);
 
-  auto unordered_result = false;
   hyrise::storage::c_atable_ptr_t table = nullptr;
   for (;it != it_end; ++it) {
     const auto& pl = (*it)->pos_list;
@@ -396,16 +375,12 @@ std::shared_ptr<PointerCalculator> PointerCalculator::concatenate_many(pc_vector
       auto sz = (*it)->size();
       result->resize(result->size() + sz);
       std::iota(end(*result)-sz, end(*result), 0);
-      unordered_result = true;
     } else {
       result->insert(end(*result), begin(*pl), end(*pl));
     }
   }
 
-  /*if (unordered_result)
-    std::sort(begin(*result), end(*result));*/
-
-  return std::make_shared<PointerCalculator>(table, result, nullptr);
+  return create(table, result, nullptr);
 }
 
 void PointerCalculator::debugStructure(size_t level) const {
@@ -417,8 +392,7 @@ void PointerCalculator::debugStructure(size_t level) const {
 void PointerCalculator::validate(hyrise::tx::transaction_id_t tid, hyrise::tx::transaction_id_t cid) {
   const auto& store = checked_pointer_cast<const Store>(table);
   if (pos_list == nullptr) {
-    bool all=false;
-    pos_list = new pos_list_t(store->buildValidPositions(cid, tid, all));
+    pos_list = new pos_list_t(store->buildValidPositions(cid, tid));
   } else {
     store->validatePositions(*pos_list, cid, tid);
   }
@@ -430,5 +404,5 @@ void PointerCalculator::remove(const pos_list_t& pl) {
   auto res = std::remove_if(std::begin(*pos_list), std::end(*pos_list),[&tmp, &end](const pos_t& p){
     return tmp.count(p) != 0u;
   });
-  (*pos_list).erase(res);
+  (*pos_list).erase(res, pos_list->end());
 }
