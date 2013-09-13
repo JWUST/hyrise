@@ -35,6 +35,7 @@ public:
  */
 class CentralPriorityScheduler : public AbstractTaskScheduler, public TaskReadyObserver {
   friend class PriorityWorkerThread;
+protected:
   typedef std::unordered_set<std::shared_ptr<Task> > waiting_tasks_t;
   // set for tasks with open dependencies
   waiting_tasks_t _waitSet;

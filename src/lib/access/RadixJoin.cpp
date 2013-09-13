@@ -64,7 +64,7 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
   auto rows_per_time_unit = 5000; // rows per ms. TODO this needs to be a configurable value
   auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
 
-  std::cout << "RadixJoin: determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << "tablesize 2: " << inputTable2->size() << std::endl;
+ // std::cout << "RadixJoin: determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << "tablesize 2: " << inputTable2->size() << std::endl;
 
   return num_tasks;
 }
@@ -141,7 +141,7 @@ std::vector<std::shared_ptr<Task> > RadixJoin::applyDynamicParallelization(size_
     j->setBits1(_bits1);
     j->setBits2(_bits2);
     j->setPlanOperationName("NestedLoopEquiJoin");
-    j->setProfiling(true);
+   // j->setProfiling(true);
 
     for(int i = 0; i < partitions; i++){
       j->addPartition(i);

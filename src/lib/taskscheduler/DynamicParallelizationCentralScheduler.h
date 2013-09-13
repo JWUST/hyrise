@@ -8,9 +8,9 @@
 #ifndef DYNAMICPARALLELIZATIONCENTRALSCHEDULER_H_
 #define DYNAMICPARALLELIZATIONCENTRALSCHEDULER_H_
 
-#include "CentralScheduler.h"
+#include "CentralPriorityScheduler.h"
 
-class DynamicParallelizationCentralScheduler : public CentralScheduler{
+class DynamicParallelizationCentralScheduler : public CentralPriorityScheduler{
 
 public:
   DynamicParallelizationCentralScheduler(int threads = getNumberOfCoresOnSystem());

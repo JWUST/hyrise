@@ -18,7 +18,7 @@ bool registered  =
     SharedScheduler::registerScheduler<DynamicParallelizationCentralScheduler>("DynamicParallelizationCentralScheduler");
 }
 
-DynamicParallelizationCentralScheduler::DynamicParallelizationCentralScheduler(int threads):CentralScheduler(threads){
+DynamicParallelizationCentralScheduler::DynamicParallelizationCentralScheduler(int threads):CentralPriorityScheduler(threads){
 	// do nothing
 }
 
@@ -32,13 +32,13 @@ void DynamicParallelizationCentralScheduler::schedule(std::shared_ptr<Task> task
 		if(para->isDynamic() && para->isReady()){
 			auto tasks = para->applyDynamicParallelization(this->getMaxTaskSize());
 			for (const auto& i: tasks) {
-      			CentralScheduler::schedule(i);
+      			CentralPriorityScheduler::schedule(i);
     	}			
     }
     else
-      CentralScheduler::schedule(task);
+      CentralPriorityScheduler::schedule(task);
 	} else
-		CentralScheduler::schedule(task);
+		CentralPriorityScheduler::schedule(task);
 }
 
 void DynamicParallelizationCentralScheduler::notifyReady(std::shared_ptr<Task> task){
