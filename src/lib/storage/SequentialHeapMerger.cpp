@@ -82,6 +82,8 @@ void SequentialHeapMerger::mergeValues(const std::vector<hyrise::storage::c_atab
   merged_table->setDictionaryAt(new_dict, destination_column_index);
 }
 
+
+
 template<typename T>
 struct DictMergeHelper {
 
@@ -89,10 +91,6 @@ struct DictMergeHelper {
   std::vector<bool> ref;
   DictionaryIterator<T> it;
   DictionaryIterator<T> end;
-
-  bool operator<(const DictMergeHelper &other) const {
-    return *it > *(other.it);
-  }
 
   void next() {
     it++;
@@ -104,11 +102,21 @@ struct DictMergeHelper {
   }
 
   bool done() {
-    return it == end;
+    return it.equal(end);
   }
 
   void print() {
     std::cout << tab_index << " " << *it << std::boolalpha << valid() << std::endl;
+  }
+
+};
+
+template<typename T>
+struct DictMergerHelperCompare {
+
+  bool operator()(const std::shared_ptr<DictMergeHelper<T>>& left, 
+      const std::shared_ptr<DictMergeHelper<T>>& right) const {
+    return *(left->it) > *(right->it);
   }
 
 };
@@ -121,7 +129,10 @@ AbstractTable::SharedDictionaryPtr SequentialHeapMerger::createNewDict(const std
                                                                         bool useValid,
                                                                         const std::vector<bool>& valid) {
   // Heap Queue
-  std::priority_queue<DictMergeHelper<T>*> queue;
+  std::priority_queue<
+    std::shared_ptr<DictMergeHelper<T>>,
+    std::vector<std::shared_ptr<DictMergeHelper<T>>>,
+    DictMergerHelperCompare<T>> queue;
 
   value_id_mapping.resize(input_tables.size());
 
@@ -132,7 +143,7 @@ AbstractTable::SharedDictionaryPtr SequentialHeapMerger::createNewDict(const std
     value_id_mapping[p].resize(value_id_maps[p]->size());
 
     // For each part create a helper that is mapped to the priority queue
-    auto helper = new DictMergeHelper<T>();
+    auto helper = std::make_shared<DictMergeHelper<T>>();
     helper->it = dict->begin();
     helper->end = dict->end();
     helper->tab_index = p;
@@ -164,7 +175,7 @@ AbstractTable::SharedDictionaryPtr SequentialHeapMerger::createNewDict(const std
   auto new_dict = std::make_shared<OrderPreservingDictionary<T>>( hyrise::functional::sum(value_id_mapping, 0ul, [](std::vector<value_id_t>& v){ return v.size(); }));
   while(!queue.empty()) {
 
-    auto& element = queue.top();
+    auto element = queue.top();
 
     T curr_val = *(element->it);
     queue.pop();
@@ -185,7 +196,7 @@ AbstractTable::SharedDictionaryPtr SequentialHeapMerger::createNewDict(const std
     if (!element->done()) {
       queue.push(element);
     } else {
-      delete element;
+      //delete element;
     }
     first = false;
   }
