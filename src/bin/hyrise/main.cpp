@@ -115,7 +115,7 @@ void bindToNode(int node) {
   // free duplicated cpuset
   hwloc_bitmap_free(cpuset);
 
-  obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MACHINE, node);
+  obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MACHINE, 0);
   if (hwloc_set_membind_nodeset(topology, obj->nodeset, HWLOC_MEMBIND_INTERLEAVE, HWLOC_MEMBIND_STRICT | HWLOC_MEMBIND_THREAD)) {
     char *str;
     int error = errno;
@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
 
 
   //Bind the program to the first NUMA node for schedulers that have core bound threads
-  if((scheduler_name == "CoreBoundQueuesScheduler") || (scheduler_name == "CoreBoundQueuesScheduler") ||  (scheduler_name == "WSCoreBoundQueuesScheduler") || (scheduler_name == "WSCoreBoundPriorityQueuesScheduler"))
+  if((scheduler_name == "CoreBoundQueuesScheduler") || (scheduler_name == "CoreBoundQueuesScheduler") ||  (scheduler_name == "WSCoreBoundQueuesScheduler") || (scheduler_name == "WSCoreBoundPriorityQueuesScheduler") || (scheduler_name == "CentralScheduler"))
     bindToNode(0);
 
   // Log File Configuration
