@@ -3,7 +3,7 @@
         "reference" :  {
             "type": "TableLoad",
             "table": "reference",
-            "filename" : "tables/empty" 
+            "filename" : "tables/revenue_empty.tbl" 
         },
         "load" : {
             "type": "LoadFile",

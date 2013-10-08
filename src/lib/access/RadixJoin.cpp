@@ -55,10 +55,10 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
   }
 
   const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
-  const auto& dep2 = std::dynamic_pointer_cast<PlanOperation>(_dependencies[1]);
+  // const auto& dep2 = std::dynamic_pointer_cast<PlanOperation>(_dependencies[1]);
 
   auto& inputTable = dep->getResultTable();
-  auto& inputTable2 = dep2->getResultTable(); 
+  // auto& inputTable2 = dep2->getResultTable(); 
 
   size_t tbl_size = inputTable->size();
   auto rows_per_time_unit = 5000; // rows per ms. TODO this needs to be a configurable value
