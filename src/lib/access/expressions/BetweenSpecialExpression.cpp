@@ -37,10 +37,7 @@ class BetweenSpecialExpression : public AbstractExpression {
       _fromValue(fromValue),
       _toValue(toValue) {};
 
-  inline bool operator()(const size_t& row) {  \
-    auto curValueid = _vector->getRef(_column, row); \
-    return  _fromValueid <= curValueid && curValueid <= _toValueid; \
-  }
+  inline bool operator()(const size_t& row) { return _fromValueid <= _vector->getRef(_column, row) && _vector->getRef(_column, row) <= _toValueid; }
 
   virtual pos_list_t* match(const size_t start, const size_t stop) {
     // if from-to-range is out of bounds for dictionary
