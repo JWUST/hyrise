@@ -71,11 +71,7 @@ uint TableScan::determineDynamicCount(size_t maxTaskRunTime) {
   const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
   auto& inputTable = dep->getResultTable();
   size_t tbl_size = inputTable->size();
-  auto rows_per_time_unit = 100000; // rows per ms. TODO this needs to be a configurable value
-  auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
-  //std::cout << "TableScan: determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << std::endl;
-
-  return num_tasks;
+  return _expr->determineDynamicCount(tbl_size);
 }
 
 std::vector<std::shared_ptr<Task> > TableScan::applyDynamicParallelization(size_t maxTaskRunTime){

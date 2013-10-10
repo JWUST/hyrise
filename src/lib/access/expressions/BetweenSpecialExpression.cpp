@@ -76,6 +76,11 @@ class BetweenSpecialExpression : public AbstractExpression {
   }
 
   static std::unique_ptr<BetweenSpecialExpression<T>> parse(const Json::Value& data);
+
+  virtual uint determineDynamicCount(size_t table_size) {
+    std::cout << "determineDynamicCount in BetweenSpecialExpression" <<std::endl;
+    return 1;
+  }
   
 };
 

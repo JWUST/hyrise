@@ -45,4 +45,9 @@ StringEqualSpecialExpression * StringEqualSpecialExpression::clone() {
   return new StringEqualSpecialExpression(_column, _value);
 }
 
+uint StringEqualSpecialExpression::determineDynamicCount(size_t table_size) {
+  std::cout << "Determine dynamic count in stringequalsexpression" << std::endl;
+  return 1;
+}
+
 }}
