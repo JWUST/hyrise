@@ -55,16 +55,31 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
   }
 
   const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
-  // const auto& dep2 = std::dynamic_pointer_cast<PlanOperation>(_dependencies[1]);
+  const auto& dep2 = std::dynamic_pointer_cast<PlanOperation>(_dependencies[1]);
 
   auto& inputTable = dep->getResultTable();
-  // auto& inputTable2 = dep2->getResultTable(); 
+  auto& inputTable2 = dep2->getResultTable(); 
 
-  size_t tbl_size = inputTable->size();
-  auto rows_per_time_unit = 5000; // rows per ms. TODO this needs to be a configurable value
-  auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
+  size_t total_tbl_size = inputTable->size() + inputTable2->size();  
+
+  int difference, size_index;
+  size_index = 0;
+  difference = abs(total_tbl_size - table_size[0]);
+
+  for(int i = 0; i < 7; i++) {
+    if (difference > abs(total_tbl_size - table_size[i])) {
+      difference = abs(total_tbl_size - table_size[i]);
+      size_index = i;
+    }
+  }
+
+  // int lookup_index;
+  // lookup_index = 0;
+  // difference = abs(maxTaskRunTime, )
+
+  int num_tasks = 1;
 // std::cout << "RadixJoin: determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << "tablesize 2: " << inputTable2->size() << std::endl;
-  std::cout << "RadixJoin: determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << std::endl;
+  std::cout << "RadixJoin: closest found: " << table_size[size_index] << "; table size: " << total_tbl_size << std::endl;
 
   return num_tasks;
 }
