@@ -81,16 +81,14 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
   // TODO constant values
   // TOOD maybe sort the values the other way around.
   for(int i = 0; i < 121; i++) {
-    if (difference >= abs(maxTaskRunTime - lookup[size_index][i][0])) {
+    if (difference > abs(maxTaskRunTime - lookup[size_index][i][0])) {
       difference = abs(maxTaskRunTime - lookup[size_index][i][0]);
       lookup_index = i;
     }
   }
 
-  int num_tasks = 1;
-// std::cout << "RadixJoin: determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << "tablesize 2: " << inputTable2->size() << std::endl;
-  std::cout << "RadixJoin: closest found: " << table_size[size_index] << "; table size: " << total_tbl_size << std::endl;
-  std::cout << "mts: " << maxTaskRunTime << "ms. That makes " << lookup[size_index][lookup_index][1] << " instances" << std::endl;
+  int num_tasks = lookup[size_index][lookup_index][1];
+  std::cout << "RadixJoin: determineDynamicCount: " << num_tasks << "; total table size: " << total_tbl_size << std::endl;
 
   return num_tasks;
 }
