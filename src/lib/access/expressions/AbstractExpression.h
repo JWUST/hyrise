@@ -20,19 +20,6 @@ class AbstractExpression {
     throw std::runtime_error("determineDynamicCount needs to be implemented for this expression for dynamic parallelization.");
   }
 
-private:
-  // needs to be filled in in concrete expressions
-  // for expression where this is not overridden, 
-  // determineDynamicCount results in 1
-  // these are the table sizes for the first dimension in lookup
-  int table_size_size;
-  int table_size[1];
-  // for each table size store an array of 2-arrays with the meanTaskRunTime and
-  // the degree of parallelism.
-  int lookup_size;
-  int lookup[1][1][2];
-
-
 };
 
 }}

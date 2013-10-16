@@ -72,6 +72,7 @@ uint StringEqualSpecialExpression::determineDynamicCount(size_t max_task_size, s
       lookup_index = i;
     }
   }
+  std::cout << "TablScan: Size is: " << input_table_size << " lookup_index=" << lookup_index << ", size_index=" << size_index << std::endl;
   std::cout << "TableScan determineDynamicCount: " << lookup[size_index][lookup_index][1] << std::endl;
   return lookup[size_index][lookup_index][1];
 }
