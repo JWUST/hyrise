@@ -3,9 +3,11 @@
 #define SRC_LIB_STORAGE_ORDERPRESERVINGDICTIONARY_H_
 
 #include <assert.h>
+#include <algorithm>
 #include <iostream>
 #include <memory>
 
+#include "helper/checked_cast.h"
 #include "storage/BaseDictionary.h"
 #include "storage/BaseIterator.h"
 #include "storage/DictionaryIterator.h"
@@ -77,13 +79,13 @@ public:
   }
       
   value_id_t getValueIdForValue(const T &value) const {
-    auto binary_search = lower_bound(_values->begin(), _values->end(), value);
+    auto binary_search = std::lower_bound(_values->begin(), _values->end(), value);
     size_t index = binary_search - _values->begin();
     return index;
   }
 
   value_id_t getValueIdForValueSmaller(T other) {
-    auto binary_search = lower_bound(_values->begin(), _values->end(), other);
+    auto binary_search = std::lower_bound(_values->begin(), _values->end(), other);
     size_t index = binary_search - _values->begin();
     
     assert(index > 0);
@@ -91,7 +93,7 @@ public:
   }
 
   value_id_t getValueIdForValueGreater(T other) {
-    auto binary_search = upper_bound(_values->begin(), _values->end(), other);
+    auto binary_search = std::upper_bound(_values->begin(), _values->end(), other);
     size_t index = binary_search - _values->begin();
     
     return index;
@@ -138,11 +140,11 @@ public:
   typedef DictionaryIterator<T> iterator;
 
   iterator begin() {
-    return iterator(new OrderPreservingDictionaryIterator<T>(_values, 0));
+    return iterator(std::make_shared<OrderPreservingDictionaryIterator<T>>(_values, 0));
   }
 
   iterator end() {
-    return iterator(new OrderPreservingDictionaryIterator<T>(_values, _values->size()));
+    return iterator(std::make_shared<OrderPreservingDictionaryIterator<T>>(_values, _values->size()));
   }
 
 };
@@ -160,12 +162,12 @@ class OrderPreservingDictionaryIterator : public BaseIterator<T> {
   typedef typename dictionary_type::shared_vector_type vector_type;
 
 public:
-  vector_type _values;
+  const vector_type& _values;
   size_t _index;
 
-  explicit OrderPreservingDictionaryIterator(vector_type values): _values(values), _index(0) {}
+  explicit OrderPreservingDictionaryIterator(const vector_type& values): _values(values), _index(0) {}
 
-  OrderPreservingDictionaryIterator(vector_type values, size_t index): _values(values), _index(index) {}
+  OrderPreservingDictionaryIterator(const vector_type& values, size_t index): _values(values), _index(index) {}
 
   virtual ~OrderPreservingDictionaryIterator() { }
 
@@ -173,10 +175,10 @@ public:
     ++_index;
   }
 
-  bool equal(BaseIterator<T> *other) const {
+  bool equal(const std::shared_ptr<BaseIterator<T>>& other) const {
     return
-        _values.get() == ((OrderPreservingDictionaryIterator<T> *) other)->_values.get() &&
-        _index  == ((OrderPreservingDictionaryIterator<T> *) other)->_index;
+        _values.get() == std::dynamic_pointer_cast<OrderPreservingDictionaryIterator<T>>(other)->_values.get() &&
+        _index  == std::dynamic_pointer_cast<OrderPreservingDictionaryIterator<T>>(other)->_index;
   }
 
   T &dereference() const {
@@ -185,10 +187,6 @@ public:
 
   value_id_t getValueId() const {
     return _index;
-  }
-
-  virtual BaseIterator<T> *clone() {
-    return new OrderPreservingDictionaryIterator<T>(*this);
   }
 
 };

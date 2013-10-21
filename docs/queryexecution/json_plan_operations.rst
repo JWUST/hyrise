@@ -195,7 +195,11 @@ will build a hash table, hashing the columns specified in "fields".
         "fields": [1]
         },
 
-``"fields": [1]`` pass in column(s) to be hashed, e.g. 1st column.
+``"fields": [1]`` pass in column(s) to be hashed, e.g. 1st column. Depending
+on the hashing type it is possible to supply the parameter
+``"key":"join|groupby"`` that is used to decide if hashing is based on values
+or value IDs. Please be aware that for aggregation on multiple horizontal
+partitions it is required to use key type ``join``.
 
 
 HashJoinProbe
@@ -259,7 +263,7 @@ group table by attributes specified in ``"fields":``.
         "type": "GroupByScan",
         "fields": ["employee_company_id"],
         "functions": [
-            {"type": 1, /*COUNT*/ "field": "employee_company_id"}
+            {"type": 1, /*COUNT*/ "field": "employee_company_id", "distinct": true}
             ]
         },
     
@@ -272,11 +276,28 @@ group table by attributes specified in ``"fields":``.
                 0  SUM
                 1  COUNT
                 2  AVERAGE
+                3  MIN
+                4  MAX
                 == =======
                 
 ``"field":`` field the aggregate function is to be performed on.
 
+``"distinct":`` [only for COUNT] determines whether to count distinct. [optional. default is false]
 
+If aggregation is executed on multiple horizontal partitions it is required to
+use a special argument called ``"key"`` that expects a hash table build on
+values instead of value IDs.
+
+::
+
+    "ID": {
+        "type": "GroupByScan",
+        "fields": ["employee_company_id"],
+        "key" : "value",
+        "functions": [
+            {"type": 1, /*COUNT*/ "field": "employee_company_id", "distinct": true}
+            ]
+        },
 
 
 MaterializingScan

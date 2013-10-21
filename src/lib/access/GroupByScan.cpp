@@ -49,13 +49,6 @@ struct write_group_functor {
 }
 
 namespace hyrise {
-namespace storage {
-
-
-}
-}
-
-namespace hyrise {
 namespace access {
 
 namespace {
@@ -78,17 +71,29 @@ void GroupByScan::setupPlanOperation() {
 
 void GroupByScan::executePlanOperation() {
   if ((_field_definition.size() != 0) && (input.numberOfHashTables() >= 1)) {
-      if (_field_definition.size() == 1)
-        return executeGroupBy<SingleAggregateHashTable, aggregate_single_hash_map_t, aggregate_single_key_t>();
-      else
-        return executeGroupBy<AggregateHashTable, aggregate_hash_map_t, aggregate_key_t>();      
+    if (_globalAggregation) {
+      if (_field_definition.size() == 1) {
+        return executeGroupBy<SingleJoinHashTable, join_single_hash_map_t, join_single_key_t>();
+      } else {
+        return executeGroupBy<JoinHashTable, join_hash_map_t, join_key_t>();
+      }
+    }
+    if (_field_definition.size() == 1) {
+      return executeGroupBy<SingleAggregateHashTable, aggregate_single_hash_map_t, aggregate_single_key_t>();
+    } else {
+      return executeGroupBy<AggregateHashTable, aggregate_hash_map_t, aggregate_key_t>();
+    }
   } else {
     auto resultTab = createResultTableLayout();
-    resultTab->resize(1);
-    for (const auto & funct: _aggregate_functions) {
-      funct->processValuesForRows(getInputTable(0), nullptr, resultTab, 0);
+
+    // If we have an empty table, we cannot do anything
+    if (getInputTable()->size() > 0) {
+      resultTab->resize(1);
+      for (const auto & funct: _aggregate_functions) {
+        funct->processValuesForRows(getInputTable(0), nullptr, resultTab, 0);
+      }
     }
-    this->addResult(resultTab);
+    addResult(resultTab);
   }
 }
 
@@ -107,6 +112,11 @@ std::shared_ptr<PlanOperation> GroupByScan::parse(Json::Value &v) {
       gs->addFunction(parseAggregateFunction(f));
     }
   }
+
+  // Check if we need to aggregate by value
+  if (v.isMember("key") && v["key"].asString().compare("value") == 0) {
+    gs->_globalAggregation = true;
+  }
   return gs;
 }
 
@@ -121,7 +131,7 @@ storage::atable_ptr_t GroupByScan::createResultTableLayout() {
   storage::atable_ptr_t group_tab = getInputTable(0)->copy_structure_modifiable(&_field_definition);
   //creating fields from aggregate functions
   for (const auto & fun: _aggregate_functions) {
-    ColumnMetadata *m = new ColumnMetadata(fun->columnName(getInputTable(0)->nameOfColumn(fun->getField())), fun->getType());
+    ColumnMetadata *m = new ColumnMetadata(fun->columnName(), fun->getType());
     metadata.push_back(m);
     dictionaries.push_back(AbstractDictionary::dictionaryWithType<DictionaryFactory<OrderIndifferentDictionary> >(fun->getType()));
   }
