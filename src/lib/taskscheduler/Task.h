@@ -109,6 +109,11 @@ public:
    */
   void removeDependency(std::shared_ptr<Task> dependency);
   /*
+   * change dependency; 
+   */
+  void changeDependency(std::shared_ptr<Task> from, std::shared_ptr<Task> to);
+
+  /*
    * gets the number of dependencies
    */
   int getDependencyCount();

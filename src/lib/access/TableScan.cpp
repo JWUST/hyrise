@@ -94,9 +94,9 @@ std::vector<std::shared_ptr<Task> > TableScan::applyDynamicParallelization(size_
   }
 
   // remove task from dependencies of successors
-  for (auto successor : successors){
-    successor->removeDependency(shared_from_this());
-  }
+  //for (auto successor : successors){
+  //  successor->removeDependency(shared_from_this());
+  //}
 
   // remove done observers from current task
   _doneObservers.clear();
@@ -156,7 +156,7 @@ std::vector<std::shared_ptr<Task> > TableScan::applyDynamicParallelization(size_
 
   // set union as dependency to all successors
   for (auto successor : successors)
-      successor->addDependency(unionall);
+    successor->changeDependency(shared_from_this(), unionall);
 
   getResponseTask()->registerPlanOperation(unionall);
   tasks.push_back(unionall);

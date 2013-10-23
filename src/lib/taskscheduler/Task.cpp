@@ -43,6 +43,7 @@ void Task::addDependency(std::shared_ptr<Task> dependency) {
     std::lock_guard<std::mutex> lk(_depMutex);
     _dependencies.push_back(dependency);
     ++_dependencyWaitCount;
+    //std::cout << "add: Task " << _id << " count:" << _dependencyWaitCount << std::endl;
   }
   dependency->addDoneObserver(this);
 }
@@ -63,10 +64,25 @@ void Task::removeDependency(std::shared_ptr<Task> dependency) {
       if (*it == dependency){
         it = _dependencies.erase(it);
         --_dependencyWaitCount;
+	//std::cout << "remove: Task " << _id << " count:" << _dependencyWaitCount << std::endl;
       }
       else 
         ++it;
     }
+}
+
+void Task::changeDependency(std::shared_ptr<Task> from, std::shared_ptr<Task> to) {
+    
+    std::lock_guard<std::mutex> lk(_depMutex);
+    // find from dependencies
+    for(size_t i = 0, size = _dependencies.size(); i < size; i++){
+      if(_dependencies[i] == from){
+	       _dependencies[i] = to;
+        // std::cout << "changedDep" << std::endl;
+       }
+    }
+    // add new done observer
+    to->addDoneObserver(this);
 }
 
 void Task::setDependencies(std::vector<std::shared_ptr<Task> > dependencies, int count) {
