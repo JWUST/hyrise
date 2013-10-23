@@ -60,6 +60,10 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
   auto& inputTable = dep->getResultTable();
   auto& inputTable2 = dep2->getResultTable(); 
 
+  if (!inputTable || !inputTable2) { // if either input is empty, no parallelization.
+    return 1;
+  }
+
   size_t total_tbl_size = inputTable->size() + inputTable2->size();  
 
   int difference, size_index;
