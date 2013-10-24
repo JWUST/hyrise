@@ -46,8 +46,8 @@ class BetweenSpecialExpression : public AbstractExpression {
     } // select everything
     else if (_fromValue < _dict->getSmallestValue() && _toValue > _dict->getGreatestValue()) {
       pos_list_t* l = new pos_list_t(stop-start);
-      // fill with all positions in [0, stop-start)
-      std::iota(l->begin(), l->end(), 0);
+      // fill with all positions in [start, stop)
+      std::iota(l->begin(), l->end(), start);
       return l;
     }
 
