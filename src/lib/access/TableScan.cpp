@@ -51,11 +51,7 @@ void TableScan::executePlanOperation() {
     positions = new pos_list_t();
 
   std::shared_ptr<PointerCalculator> result;
-
-  if(tablerange)
-    result = PointerCalculator::create(tablerange->getActualTable(), positions);
-  else
-    result = PointerCalculator::create(getInputTable(), positions);
+  result = PointerCalculator::create(getInputTable(), positions);
 
   addResult(result);
 }

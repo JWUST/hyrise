@@ -45,7 +45,10 @@ class BetweenSpecialExpression : public AbstractExpression {
       return new pos_list_t();
     } // select everything
     else if (_fromValue < _dict->getSmallestValue() && _toValue > _dict->getGreatestValue()) {
-      return nullptr;
+      pos_list_t* l = new pos_list_t(stop-start);
+      // fill with all positions in [0, stop-start)
+      std::iota(l->begin(), l->end(), 0);
+      return l;
     }
 
     // find an inclusive range
