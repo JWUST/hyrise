@@ -88,7 +88,7 @@ class BetweenSpecialExpression : public AbstractExpression {
 
     if (maxTaskRunTime < min_mts) {
       std::cerr << "Could not honor mts request. Too small." << std::endl;
-      return 1;
+      return 1024;
     }
 
     auto a = 3.04372066270107 * total_tbl_size_in_100k + 11.3041594897877;

@@ -53,7 +53,7 @@ uint StringEqualSpecialExpression::determineDynamicCount(size_t maxTaskRunTime, 
 
   if (maxTaskRunTime < min_mts) {
     std::cerr << "Could not honor mts request. Too small." << std::endl;
-    return 1;
+    return 1024;
   }
 
   auto a = 1.24810588988585 * total_tbl_size_in_100k - 2.68855638804148;
