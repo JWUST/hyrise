@@ -45,36 +45,23 @@ StringEqualSpecialExpression * StringEqualSpecialExpression::clone() {
   return new StringEqualSpecialExpression(_column, _value);
 }
 
-uint StringEqualSpecialExpression::determineDynamicCount(size_t max_task_size, size_t input_table_size) {
-  //find closest table size in lookup
+uint StringEqualSpecialExpression::determineDynamicCount(size_t maxTaskRunTime, size_t input_table_size) {
+  auto total_tbl_size_in_100k = (input_table_size)/ 100000.0;
 
-  int difference, size_index;
-  size_index = 0;
-  difference = abs(input_table_size - table_size[0]);
+  // this is the b of the mts = a/instances+b model
+  auto min_mts = 0.00518588320183824 * total_tbl_size_in_100k + 1.48501706806629;
 
-  // TODO constant values
-  for(int i = 0; i < table_size_size; i++) {
-    if (difference > abs(input_table_size - table_size[i])) {
-      difference = abs(input_table_size - table_size[i]);
-      size_index = i;
-    }
+  if (maxTaskRunTime < min_mts) {
+    std::cerr << "Could not honor mts request. Too small." << std::endl;
+    return 1;
   }
 
-  int lookup_index;
-  lookup_index = 0;
-  difference = abs(max_task_size - lookup[size_index][0][0]);
+  auto a = 1.24810588988585 * total_tbl_size_in_100k - 2.68855638804148;
+  int num_tasks = std::max(1,static_cast<int>(round(a/(maxTaskRunTime - min_mts))));
 
-  // TODO constant values
-  // TOOD maybe sort the values the other way around.
-  for(int i = 0; i < lookup_size; i++) {
-    if (difference > abs(max_task_size - lookup[size_index][i][0])) {
-      difference = abs(max_task_size - lookup[size_index][i][0]);
-      lookup_index = i;
-    }
-  }
-  std::cout << "TablScan: Size is: " << input_table_size << " lookup_index=" << lookup_index << ", size_index=" << size_index << std::endl;
-  std::cout << "TableScan determineDynamicCount: " << lookup[size_index][lookup_index][1] << std::endl;
-  return lookup[size_index][lookup_index][1];
+  std::cout << "StringEqualsExpression: tts(100k): " << total_tbl_size_in_100k << ", num_tasks: " << num_tasks << std::endl;
+
+  return num_tasks;
 }
 
 }}

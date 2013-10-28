@@ -64,35 +64,21 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
     return 1;
   }
 
-  size_t total_tbl_size = inputTable->size() + inputTable2->size();  
+  auto total_tbl_size_in_100k = (inputTable->size() + inputTable2->size())/ 100000.0;
 
-  int difference, size_index;
-  size_index = 0;
-  difference = abs(total_tbl_size - table_size[0]);
+  // this is the b of the mts = a/instances+b model
+  auto min_mts = 1.28500725641393 * total_tbl_size_in_100k + 72.3152621297568;
 
-  // TODO constant values
-  for(int i = 0; i < 7; i++) {
-    if (difference > abs(total_tbl_size - table_size[i])) {
-      difference = abs(total_tbl_size - table_size[i]);
-      size_index = i;
-    }
+  if (maxTaskRunTime < min_mts) {
+    std::cerr << "Could not honor mts request. Too small." << std::endl;
+    return 1;
   }
 
-  int lookup_index;
-  lookup_index = 0;
-  difference = abs(maxTaskRunTime - lookup[size_index][0][0]);
+  auto a = 245.939068494777 * total_tbl_size_in_100k + 8854.37850197074;
+  int num_tasks = std::max(1,static_cast<int>(round(a/(maxTaskRunTime - min_mts))));
 
-  // TODO constant values
-  // TOOD maybe sort the values the other way around.
-  for(int i = 0; i < 121; i++) {
-    if (difference > abs(maxTaskRunTime - lookup[size_index][i][0])) {
-      difference = abs(maxTaskRunTime - lookup[size_index][i][0]);
-      lookup_index = i;
-    }
-  }
+  std::cout << "RadixJoin: tts(100k): " << total_tbl_size_in_100k << ", num_tasks: " << num_tasks << std::endl;
 
-  int num_tasks = lookup[size_index][lookup_index][1];
-  std::cout << "RadixJoin: determineDynamicCount: " << num_tasks << "; total table size: " << total_tbl_size << std::endl;
 
   return num_tasks;
 }
