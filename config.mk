@@ -61,7 +61,7 @@ else
 	SHARED_LIB := -dynamiclib
 endif
 
-BUILD_FLAGS += -pipe -march=native -msse4.2 -gdwarf-2 -ggdb -Wall -Wextra -Wno-unused-parameter
+BUILD_FLAGS += -pipe -march=native -msse4.2 -gdwarf-2 -ggdb -Wall -Wextra -Wno-unused-parameter -pthread
 CXX_BUILD_FLAGS += --std=c++0x
 LINKER_FLAGS +=
 
