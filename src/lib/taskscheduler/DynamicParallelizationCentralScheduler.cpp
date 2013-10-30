@@ -60,7 +60,7 @@ void DynamicParallelizationCentralScheduler::notifyReady(std::shared_ptr<Task> t
           _condition.notify_one();
         }
         else {
-          i->addReadyObserver(this);
+          i->addReadyObserver(shared_from_this());
           std::lock_guard<std::mutex> lk(_setMutex);
           _waitSet.insert(i);
           LOG4CXX_DEBUG(_logger,  "Task " << std::hex << (void *)i.get() << std::dec << " inserted in wait queue");

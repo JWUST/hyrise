@@ -17,7 +17,7 @@ class TableScan : public ParallelizablePlanOperation {
   explicit TableScan(std::unique_ptr<AbstractExpression> expr);
   /// Parse TableScan from 
   static std::shared_ptr<PlanOperation> parse(Json::Value& data);
-  const std::string vname() { return "me"; }
+  const std::string vname() { return "TableScan"; }
   virtual std::vector<std::shared_ptr<Task> > applyDynamicParallelization(size_t maxTaskRunTime);
  protected:
   void setupPlanOperation();

@@ -10,7 +10,7 @@
 
 #include "CentralPriorityScheduler.h"
 
-class DynamicParallelizationCentralScheduler : public CentralPriorityScheduler{
+class DynamicParallelizationCentralScheduler : public CentralPriorityScheduler {
 
 public:
   DynamicParallelizationCentralScheduler(int threads = getNumberOfCoresOnSystem());

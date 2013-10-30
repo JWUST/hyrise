@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   SharedScheduler::getInstance().init(scheduler_name, worker_threads);
-  AbstractTaskScheduler *scheduler = SharedScheduler::getInstance().getScheduler();
+  auto scheduler = SharedScheduler::getInstance().getScheduler();
 
   scheduler->setMaxTaskSize(maxTaskSize);
 

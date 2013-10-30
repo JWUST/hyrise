@@ -70,14 +70,14 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
   auto min_mts = 1.28500725641393 * total_tbl_size_in_100k + 72.3152621297568;
 
   if (maxTaskRunTime < min_mts) {
-    std::cerr << "Could not honor mts request. Too small." << std::endl;
+    // std::cerr << "Could not honor mts request. Too small." << std::endl;
     return 1024;
   }
 
   auto a = 245.939068494777 * total_tbl_size_in_100k + 8854.37850197074;
   int num_tasks = std::max(1,static_cast<int>(round(a/(maxTaskRunTime - min_mts))));
 
-  std::cout << "RadixJoin: tts(100k): " << total_tbl_size_in_100k << ", num_tasks: " << num_tasks << std::endl;
+  // std::cout << "RadixJoin: tts(100k): " << total_tbl_size_in_100k << ", num_tasks: " << num_tasks << std::endl;
 
 
   return num_tasks;
@@ -91,20 +91,21 @@ std::vector<std::shared_ptr<Task> > RadixJoin::applyDynamicParallelization(size_
 
 
   // get successors of current task
-  std::vector<Task*> successors;
+  std::vector<std::shared_ptr<Task> > successors;
   for (auto doneObserver : _doneObservers) {
-    Task* const task = dynamic_cast<Task*>(doneObserver);
+    std::shared_ptr<Task> const task = std::dynamic_pointer_cast<Task>(doneObserver);
     successors.push_back(task);
   }
 
   // remove task from dependencies of successors
-  for (auto successor : successors){
-    successor->removeDependency(shared_from_this());
-  }
-
+ // for (auto successor : successors){
+  //  successor->removeDependency(shared_from_this());
+  //}
   // remove done observers from current task
-  _doneObservers.clear();
-
+  {
+    std::lock_guard<std::mutex> lk(_doneObserverMutex);
+    _doneObservers.clear();
+  }
   // current task is not executed
 
   // set part and count for this task as first task
@@ -188,8 +189,12 @@ std::vector<std::shared_ptr<Task> > RadixJoin::applyDynamicParallelization(size_
     copyTaskAttributesFromThis(unionall);
 
     // set union as dependency to all successors
+    //for (auto successor : successors)
+    //  successor->addDependency(unionall);
+   // set union as dependency to all successors
     for (auto successor : successors)
-      successor->addDependency(unionall);
+      successor->changeDependency(std::dynamic_pointer_cast<Task>(shared_from_this()), unionall);
+
 
     // calculate partitions that need to be worked by join
     // if join_par > partitions, set join_par to partitions
