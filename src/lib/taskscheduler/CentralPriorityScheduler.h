@@ -33,7 +33,7 @@ public:
 /**
  * a central scheduler holds a task queue and n worker threads
  */
-class CentralPriorityScheduler : public AbstractTaskScheduler, public TaskReadyObserver {
+class CentralPriorityScheduler : public AbstractTaskScheduler, public TaskReadyObserver, public std::enable_shared_from_this<TaskReadyObserver> {
   friend class PriorityWorkerThread;
 protected:
   typedef std::unordered_set<std::shared_ptr<Task> > waiting_tasks_t;
@@ -50,7 +50,7 @@ protected:
   // condition variable to wake up workers
   std::condition_variable _condition;
   // scheduler status
-  scheduler_status_t _status;
+  scheduler_status_t _status = START_UP;
   // mutex to protect status
   std::mutex _statusMutex;
 

@@ -68,14 +68,11 @@ uint TableScan::determineDynamicCount(size_t maxTaskRunTime) {
   if (maxTaskRunTime == 0) {
     return 1;
   }
+
   const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
   auto& inputTable = dep->getResultTable();
   size_t tbl_size = inputTable->size();
-  auto rows_per_time_unit = 100000; // rows per ms. TODO this needs to be a configurable value
-  auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
-  //std::cout << "TableScan: determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << std::endl;
-
-  return num_tasks;
+  return _expr->determineDynamicCount(maxTaskRunTime, tbl_size);
 }
 
 std::vector<std::shared_ptr<Task> > TableScan::applyDynamicParallelization(size_t maxTaskRunTime){
@@ -86,29 +83,33 @@ std::vector<std::shared_ptr<Task> > TableScan::applyDynamicParallelization(size_
 
   // if no parallelization is necessary, just return this task again as is
   if (dynamicCount <= 1) {
-    tasks.push_back(shared_from_this());
+    tasks.push_back(std::static_pointer_cast<Task>(shared_from_this()));
     return tasks;
   }
 
   // get successors of current task
-  std::vector<Task*> successors;
+  std::vector<std::shared_ptr<Task> > successors;
   for (auto doneObserver : _doneObservers) {
-    Task* const task = dynamic_cast<Task*>(doneObserver);
+    std::shared_ptr<Task> const task = std::dynamic_pointer_cast<Task>(doneObserver);
     successors.push_back(task);
   }
 
   // remove task from dependencies of successors
-  for (auto successor : successors){
-    successor->removeDependency(shared_from_this());
-  }
+
+  //for (auto successor : successors){
+  //  successor->removeDependency(shared_from_this());
+  //}
 
   // remove done observers from current task
-  _doneObservers.clear();
+  {
+    std::lock_guard<std::mutex> lk(_doneObserverMutex);
+    _doneObservers.clear();
+  }
 
   // set part and count for this task as first task
   this->setPart(0);
   this->setCount(dynamicCount);
-  tasks.push_back(shared_from_this());
+  tasks.push_back(std::static_pointer_cast<Task>(shared_from_this()));
   std::string opIdBase = _operatorId;
   std::ostringstream os;
   os << 0;
@@ -160,7 +161,7 @@ std::vector<std::shared_ptr<Task> > TableScan::applyDynamicParallelization(size_
 
   // set union as dependency to all successors
   for (auto successor : successors)
-      successor->addDependency(unionall);
+    successor->changeDependency(std::dynamic_pointer_cast<Task>(shared_from_this()), unionall);
 
   getResponseTask()->registerPlanOperation(unionall);
   tasks.push_back(unionall);

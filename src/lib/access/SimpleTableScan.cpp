@@ -120,20 +120,20 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
 
   // if no parallelization is necessary, just return this task again as is
   if (dynamicCount <= 1) {
-    tasks.push_back(shared_from_this());
+    tasks.push_back((std::static_pointer_cast<Task>(shared_from_this())));
     return tasks;
   }
 
   // get successors of current task
-  std::vector<Task*> successors;
+  std::vector<std::shared_ptr<Task> > successors;
   for (auto doneObserver : _doneObservers) {
-    Task* const task = dynamic_cast<Task*>(doneObserver);
+    std::shared_ptr<Task> const task = std::dynamic_pointer_cast<Task>(doneObserver);
     successors.push_back(task);
   }
 
   // remove task from dependencies of successors
   for (auto successor : successors){
-    successor->removeDependency(shared_from_this());
+    successor->removeDependency(std::static_pointer_cast<Task>(shared_from_this()));
   }
 
   // remove done observers from current task
@@ -142,7 +142,7 @@ std::vector<std::shared_ptr<Task> > SimpleTableScan::applyDynamicParallelization
   // set part and count for this task as first task
   this->setPart(0);
   this->setCount(dynamicCount);
-  tasks.push_back(shared_from_this());
+  tasks.push_back(std::static_pointer_cast<Task>(shared_from_this()));
   std::string opIdBase = _operatorId;
   std::ostringstream os;
   os << 0;

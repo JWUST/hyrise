@@ -39,8 +39,10 @@ static const storage::atable_ptr_t empty_result;
 const storage::c_atable_ptr_t PlanOperation::getResultTable(size_t index) const {
   if (output.numberOfTables())
     return output.getTable(index);
-  else
-     return empty_result;
+  else{
+    //std::cout << "empty result" << std::endl;
+    return empty_result;
+  }
 }
 
 storage::c_ahashtable_ptr_t PlanOperation::getInputHashTable(size_t index) const {

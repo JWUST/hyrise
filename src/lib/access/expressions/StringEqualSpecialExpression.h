@@ -26,6 +26,7 @@ class StringEqualSpecialExpression : public AbstractExpression {
   virtual void walk(const std::vector<hyrise::storage::c_atable_ptr_t> &l);
   static std::unique_ptr<StringEqualSpecialExpression> parse(const Json::Value& data);
   virtual StringEqualSpecialExpression * clone();
+  virtual uint determineDynamicCount(size_t max_task_size, size_t input_table_size);
   
 };
 

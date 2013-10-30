@@ -1,0 +1,21 @@
+{
+    "operators": {
+        "reference" :  {
+            "type": "TableLoad",
+            "table": "reference",
+            "filename" : "tables/revenue_2009.tbl" 
+        },
+        "load" : {
+            "type": "LoadFile",
+            "filename": "tables/revenue.tbl"
+        },
+	"special" : {
+	    "type" : "TableScan",
+            "expression" : "hyrise::intbetween",
+            "column" : 0,
+            "fromValue" : 2009,
+            "toValue": 2009
+	   }
+    },
+    "edges" : [["load", "special"]]
+}
