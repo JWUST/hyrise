@@ -21,30 +21,31 @@ void Task::unlockForNotifications() {
 }
 
 void Task::notifyReadyObservers() {
+  //TODO see notifyDoneObservers
 	std::lock_guard<std::mutex> lk(_readyObserverMutex);
-	std::vector<std::shared_ptr<TaskReadyObserver> >::iterator itr;
+	// std::vector<std::shared_ptr<TaskReadyObserver> >::iterator itr;
 
   if (_readyObservers.size() != 1 && _priority != HIGH_PRIORITY) {
     std::cout << "Size _readyObservers: " << _readyObservers.size() << std::endl; 
     std::cout << "Task is: " << vname() << std::endl;
   }
 
-	for (itr = _readyObservers.begin(); itr != _readyObservers.end(); ++itr) {
-    // auto t = this->vname();
-    if (! *itr) {
-      std::cout << "Nullptr for itr" <<std::endl;
-      std::cout << "Task is: " << vname() << std::endl;
-    } 
-		(*itr)->notifyReady(std::dynamic_pointer_cast<Task>(shared_from_this()));
+	for (auto itr = _readyObservers.begin(); itr != _readyObservers.end(); ++itr) {
+    auto observer = itr->lock();
+		observer->notifyReady(std::dynamic_pointer_cast<Task>(shared_from_this()));
 	}
 }
 
 void Task::notifyDoneObservers() {
+  //TODO copy _doneObservers and then notify.
+  // You shouldn't leave your code while holding a lock.
+  // Confer http://stackoverflow.com/questions/14381588/observer-pattern-using-weak-ptr
 	std::lock_guard<std::mutex> lk(_doneObserverMutex);
-	std::vector<std::shared_ptr<TaskDoneObserver> >::iterator itr;
+	// std::vector<std::shared_ptr<TaskDoneObserver> >::iterator itr;
   
-	for (itr = _doneObservers.begin(); itr != _doneObservers.end(); ++itr) {
-		(*itr)->notifyDone(std::dynamic_pointer_cast<Task>(shared_from_this()));
+	for (auto itr = _doneObservers.begin(); itr != _doneObservers.end(); ++itr) {
+    auto observer = itr->lock();
+		observer->notifyDone(std::dynamic_pointer_cast<Task>(shared_from_this()));
 	}
 }
 
@@ -104,12 +105,12 @@ void Task::setDependencies(std::vector<std::shared_ptr<Task> > dependencies, int
     _dependencyWaitCount = 0;
 }
 
-void Task::addReadyObserver(std::shared_ptr<TaskReadyObserver> observer) {
+void Task::addReadyObserver(const std::weak_ptr<TaskReadyObserver>& observer) {
   std::lock_guard<std::mutex> lk(_readyObserverMutex);
   _readyObservers.push_back(observer);
 }
 
-void Task::addDoneObserver(std::shared_ptr<TaskDoneObserver> observer) {
+void Task::addDoneObserver(const std::weak_ptr<TaskDoneObserver>& observer) {
   std::lock_guard<std::mutex> lk(_doneObserverMutex);
   _doneObservers.push_back(observer);
 }

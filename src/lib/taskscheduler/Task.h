@@ -50,13 +50,10 @@ public:
   static const int SESSION_ID_NOT_SET = 0;
 
 protected:
-  // uint32_t canary2 = 0xDEADBABE;
   std::vector<std::shared_ptr<Task> > _dependencies;
-  uint32_t canary = 0xDEADBEEF;
-  uint32_t canary_after = 0xDEADBABE;
 
-  std::vector<std::shared_ptr<TaskReadyObserver> > _readyObservers;
-  std::vector<std::shared_ptr<TaskDoneObserver> > _doneObservers;
+  std::vector<std::weak_ptr<TaskReadyObserver> > _readyObservers;
+  std::vector<std::weak_ptr<TaskDoneObserver> > _doneObservers;
 
 
   int _dependencyWaitCount;
@@ -131,11 +128,11 @@ public:
   /*
    * adds an observer that gets notified if this task is ready to run
    */
-  void addReadyObserver(std::shared_ptr<TaskReadyObserver> observer);
+  void addReadyObserver(const std::weak_ptr<TaskReadyObserver>& observer);
   /*
    * adds an obserer that gets notified if this task is done
    */
-  void addDoneObserver(std::shared_ptr<TaskDoneObserver> observer);
+  void addDoneObserver(const std::weak_ptr<TaskDoneObserver>& observer);
   /*
    * whether this task is ready to run / has open dependencies
    */

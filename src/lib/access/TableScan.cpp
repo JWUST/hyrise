@@ -90,7 +90,7 @@ std::vector<std::shared_ptr<Task> > TableScan::applyDynamicParallelization(size_
   // get successors of current task
   std::vector<std::shared_ptr<Task> > successors;
   for (auto doneObserver : _doneObservers) {
-    std::shared_ptr<Task> const task = std::dynamic_pointer_cast<Task>(doneObserver);
+    std::shared_ptr<Task> const task = std::dynamic_pointer_cast<Task>(doneObserver.lock());
     successors.push_back(task);
   }
 

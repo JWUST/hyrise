@@ -201,7 +201,7 @@ void on_close(ebb_connection *connection) {
   if (connection_data != nullptr)
     delete(AsyncConnection *) connection_data;
     connection->data = nullptr;
-    // connection_data->connection = nullptr;
+    connection_data->connection = nullptr;
   free(connection);
 }
 
