@@ -15,6 +15,11 @@ class AbstractExpression {
   virtual AbstractExpression * clone(){
     throw std::runtime_error("Cannot clone base class; implement in derived");
   }
+  // delegated from TableScan
+  virtual uint determineDynamicCount(size_t max_task_time, size_t input_table_size) {
+    throw std::runtime_error("determineDynamicCount needs to be implemented for this expression for dynamic parallelization.");
+  }
+
 };
 
 }}

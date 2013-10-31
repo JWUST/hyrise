@@ -60,11 +60,25 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
   auto& inputTable = dep->getResultTable();
   auto& inputTable2 = dep2->getResultTable(); 
 
-  size_t tbl_size = inputTable->size();
-  auto rows_per_time_unit = 5000; // rows per ms. TODO this needs to be a configurable value
-  auto num_tasks = (tbl_size / (rows_per_time_unit * maxTaskRunTime)) + 1;
+  if (!inputTable || !inputTable2) { // if either input is empty, no parallelization.
+    return 1;
+  }
 
- // std::cout << "RadixJoin: determineDynamicCount: " << num_tasks << "; table size: " << tbl_size << "tablesize 2: " << inputTable2->size() << std::endl;
+  auto total_tbl_size_in_100k = (inputTable->size() + inputTable2->size())/ 100000.0;
+
+  // this is the b of the mts = a/instances+b model
+  auto min_mts = 0.244257632181208 * total_tbl_size_in_100k + 1.95211709338596;
+
+  if (maxTaskRunTime < min_mts) {
+    // std::cerr << "Could not honor mts request. Too small." << std::endl;
+    return 1024;
+  }
+
+  auto a = 5.34495284067852 * total_tbl_size_in_100k - 7.83756544184117;
+  int num_tasks = std::max(1,static_cast<int>(round(a/(maxTaskRunTime - min_mts))));
+
+  // std::cout << "RadixJoin: tts(100k): " << total_tbl_size_in_100k << ", num_tasks: " << num_tasks << std::endl;
+
 
   return num_tasks;
 }
@@ -77,20 +91,21 @@ std::vector<std::shared_ptr<Task> > RadixJoin::applyDynamicParallelization(size_
 
 
   // get successors of current task
-  std::vector<Task*> successors;
+  std::vector<std::shared_ptr<Task> > successors;
   for (auto doneObserver : _doneObservers) {
-    Task* const task = dynamic_cast<Task*>(doneObserver);
+    std::shared_ptr<Task> const task = std::dynamic_pointer_cast<Task>(doneObserver.lock());
     successors.push_back(task);
   }
 
   // remove task from dependencies of successors
-  for (auto successor : successors){
-    successor->removeDependency(shared_from_this());
-  }
-
+ // for (auto successor : successors){
+  //  successor->removeDependency(shared_from_this());
+  //}
   // remove done observers from current task
-  _doneObservers.clear();
-
+  {
+    std::lock_guard<std::mutex> lk(_doneObserverMutex);
+    _doneObservers.clear();
+  }
   // current task is not executed
 
   // set part and count for this task as first task
@@ -174,8 +189,12 @@ std::vector<std::shared_ptr<Task> > RadixJoin::applyDynamicParallelization(size_
     copyTaskAttributesFromThis(unionall);
 
     // set union as dependency to all successors
+    //for (auto successor : successors)
+    //  successor->addDependency(unionall);
+   // set union as dependency to all successors
     for (auto successor : successors)
-      successor->addDependency(unionall);
+      successor->changeDependency(std::dynamic_pointer_cast<Task>(shared_from_this()), unionall);
+
 
     // calculate partitions that need to be worked by join
     // if join_par > partitions, set join_par to partitions

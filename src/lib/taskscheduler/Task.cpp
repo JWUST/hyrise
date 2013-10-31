@@ -7,6 +7,7 @@
  */
 
 #include "taskscheduler/Task.h"
+#include "taskscheduler/DynamicParallelizationCentralScheduler.h"
 
 #include <iostream>
 #include <thread>
@@ -20,18 +21,31 @@ void Task::unlockForNotifications() {
 }
 
 void Task::notifyReadyObservers() {
+  //TODO see notifyDoneObservers
 	std::lock_guard<std::mutex> lk(_readyObserverMutex);
-	std::vector<TaskReadyObserver *>::iterator itr;
-	for (itr = _readyObservers.begin(); itr != _readyObservers.end(); ++itr) {
-		(*itr)->notifyReady(shared_from_this());
+	// std::vector<std::shared_ptr<TaskReadyObserver> >::iterator itr;
+
+  if (_readyObservers.size() != 1 && _priority != HIGH_PRIORITY) {
+    std::cout << "Size _readyObservers: " << _readyObservers.size() << std::endl; 
+    std::cout << "Task is: " << vname() << std::endl;
+  }
+
+	for (auto itr = _readyObservers.begin(); itr != _readyObservers.end(); ++itr) {
+    auto observer = itr->lock();
+		observer->notifyReady(std::dynamic_pointer_cast<Task>(shared_from_this()));
 	}
 }
 
 void Task::notifyDoneObservers() {
+  //TODO copy _doneObservers and then notify.
+  // You shouldn't leave your code while holding a lock.
+  // Confer http://stackoverflow.com/questions/14381588/observer-pattern-using-weak-ptr
 	std::lock_guard<std::mutex> lk(_doneObserverMutex);
-	std::vector<TaskDoneObserver *>::iterator itr;
-	for (itr = _doneObservers.begin(); itr != _doneObservers.end(); ++itr) {
-		(*itr)->notifyDone(shared_from_this());
+	// std::vector<std::shared_ptr<TaskDoneObserver> >::iterator itr;
+  
+	for (auto itr = _doneObservers.begin(); itr != _doneObservers.end(); ++itr) {
+    auto observer = itr->lock();
+		observer->notifyDone(std::dynamic_pointer_cast<Task>(shared_from_this()));
 	}
 }
 
@@ -43,8 +57,9 @@ void Task::addDependency(std::shared_ptr<Task> dependency) {
     std::lock_guard<std::mutex> lk(_depMutex);
     _dependencies.push_back(dependency);
     ++_dependencyWaitCount;
+    //std::cout << "add: Task " << _id << " count:" << _dependencyWaitCount << std::endl;
   }
-  dependency->addDoneObserver(this);
+  dependency->addDoneObserver(std::dynamic_pointer_cast<Task>(shared_from_this()));
 }
 
 void Task::addDoneDependency(std::shared_ptr<Task> dependency) {
@@ -63,10 +78,25 @@ void Task::removeDependency(std::shared_ptr<Task> dependency) {
       if (*it == dependency){
         it = _dependencies.erase(it);
         --_dependencyWaitCount;
+	//std::cout << "remove: Task " << _id << " count:" << _dependencyWaitCount << std::endl;
       }
       else 
         ++it;
     }
+}
+
+void Task::changeDependency(std::shared_ptr<Task> from, std::shared_ptr<Task> to) {
+    
+    std::lock_guard<std::mutex> lk(_depMutex);
+    // find from dependencies
+    for(size_t i = 0, size = _dependencies.size(); i < size; i++){
+      if(_dependencies[i] == from){
+	       _dependencies[i] = to;
+        // std::cout << "changedDep" << std::endl;
+       }
+    }
+    // add new done observer
+    to->addDoneObserver(std::dynamic_pointer_cast<Task>(shared_from_this()));
 }
 
 void Task::setDependencies(std::vector<std::shared_ptr<Task> > dependencies, int count) {
@@ -75,12 +105,12 @@ void Task::setDependencies(std::vector<std::shared_ptr<Task> > dependencies, int
     _dependencyWaitCount = 0;
 }
 
-void Task::addReadyObserver(TaskReadyObserver *observer) {
+void Task::addReadyObserver(const std::weak_ptr<TaskReadyObserver>& observer) {
   std::lock_guard<std::mutex> lk(_readyObserverMutex);
   _readyObservers.push_back(observer);
 }
 
-void Task::addDoneObserver(TaskDoneObserver *observer) {
+void Task::addDoneObserver(const std::weak_ptr<TaskDoneObserver>& observer) {
   std::lock_guard<std::mutex> lk(_doneObserverMutex);
   _doneObservers.push_back(observer);
 }

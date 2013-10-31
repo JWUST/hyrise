@@ -32,7 +32,7 @@ std::vector<std::shared_ptr<Task> > ParallelizablePlanOperation::applyDynamicPar
   // TODO possible duplication of code for several operators
     std::vector<std::shared_ptr<Task> > tasks;
     std::cout << "dynamic parallelization still needs to be implemented for operator " << vname() << std::endl;
-    tasks.push_back(shared_from_this());
+    tasks.push_back((std::static_pointer_cast<Task>(shared_from_this())));
     return tasks;
 }
 

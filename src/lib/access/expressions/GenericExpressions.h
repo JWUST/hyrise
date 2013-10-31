@@ -54,6 +54,13 @@ namespace hyrise { namespace access {
  struct GenericExpressionsHelper{
  };
 
+#define STORE_TWO_FIELD_SEQ_FLD1_LT (f1)(hyrise_float_t)(<=)(asFloat)
+#define STORE_TWO_FIELD_SEQ_FLD2_GT (f2)(hyrise_float_t)(>=)(asFloat)
+
+#define STORE_TWO_FIELD_SEQ_BTW (STORE_TWO_FIELD_SEQ_FLD1_LT)(STORE_TWO_FIELD_SEQ_FLD2_GT)
+
+DEFINE_EXPRESSION_CLASS(Store_FLV_F1_LT_FLOAT_AND_F2_GT_FLOAT, STORE_TWO_FIELD_SEQ_BTW, ()(&&));
+
 #define FLD_1 (f1)(hyrise_int_t)(==)(asUInt64)
 #define FLD_2 (f2)(hyrise_int_t)(==)(asUInt64)
 #define FLD_3 (f3)(hyrise_int_t)(==)(asUInt64)

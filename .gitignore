@@ -61,5 +61,6 @@ third_party/llvm*
 src/lib/*.gch
 
 test/advertising/data.txt
+test/dump
 
 benchmark_data

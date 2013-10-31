@@ -40,7 +40,7 @@ public:
 /*
  * a task that can be scheduled by a Task Scheduler
  */
-class Task : public TaskDoneObserver, public std::enable_shared_from_this<Task> {
+class Task : public TaskDoneObserver, public std::enable_shared_from_this<TaskDoneObserver> {
 
 public:
   static const int DEFAULT_PRIORITY = 999;
@@ -51,8 +51,10 @@ public:
 
 protected:
   std::vector<std::shared_ptr<Task> > _dependencies;
-  std::vector<TaskReadyObserver *> _readyObservers;
-  std::vector<TaskDoneObserver *> _doneObservers;
+
+  std::vector<std::weak_ptr<TaskReadyObserver> > _readyObservers;
+  std::vector<std::weak_ptr<TaskDoneObserver> > _doneObservers;
+
 
   int _dependencyWaitCount;
   // mutex for dependencyCount and dependency vector
@@ -109,6 +111,11 @@ public:
    */
   void removeDependency(std::shared_ptr<Task> dependency);
   /*
+   * change dependency; 
+   */
+  void changeDependency(std::shared_ptr<Task> from, std::shared_ptr<Task> to);
+
+  /*
    * gets the number of dependencies
    */
   int getDependencyCount();
@@ -121,11 +128,11 @@ public:
   /*
    * adds an observer that gets notified if this task is ready to run
    */
-  void addReadyObserver(TaskReadyObserver *observer);
+  void addReadyObserver(const std::weak_ptr<TaskReadyObserver>& observer);
   /*
    * adds an obserer that gets notified if this task is done
    */
-  void addDoneObserver(TaskDoneObserver *observer);
+  void addDoneObserver(const std::weak_ptr<TaskDoneObserver>& observer);
   /*
    * whether this task is ready to run / has open dependencies
    */
