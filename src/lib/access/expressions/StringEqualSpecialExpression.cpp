@@ -49,14 +49,14 @@ uint StringEqualSpecialExpression::determineDynamicCount(size_t maxTaskRunTime, 
   auto total_tbl_size_in_100k = (input_table_size)/ 100000.0;
 
   // this is the b of the mts = a/instances+b model
-  auto min_mts = 0.00518588320183824 * total_tbl_size_in_100k + 1.48501706806629;
+  auto min_mts = 0.4;
 
   if (maxTaskRunTime < min_mts) {
     // std::cerr << "Could not honor mts request. Too small." << std::endl;
     return 1024;
   }
 
-  auto a = 1.24810588988585 * total_tbl_size_in_100k - 2.68855638804148;
+  auto a = 1.75162831259492 * total_tbl_size_in_100k - 10.7798799886654;
   int num_tasks = std::max(1,static_cast<int>(round(a/(maxTaskRunTime - min_mts))));
 
   // std::cout << "StringEqualsExpression: tts(100k): " << total_tbl_size_in_100k << ", num_tasks: " << num_tasks << std::endl;

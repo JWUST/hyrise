@@ -67,14 +67,14 @@ uint RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
   auto total_tbl_size_in_100k = (inputTable->size() + inputTable2->size())/ 100000.0;
 
   // this is the b of the mts = a/instances+b model
-  auto min_mts = 1.28500725641393 * total_tbl_size_in_100k + 72.3152621297568;
+  auto min_mts = 0.244257632181208 * total_tbl_size_in_100k + 1.95211709338596;
 
   if (maxTaskRunTime < min_mts) {
     // std::cerr << "Could not honor mts request. Too small." << std::endl;
     return 1024;
   }
 
-  auto a = 245.939068494777 * total_tbl_size_in_100k + 8854.37850197074;
+  auto a = 5.34495284067852 * total_tbl_size_in_100k - 7.83756544184117;
   int num_tasks = std::max(1,static_cast<int>(round(a/(maxTaskRunTime - min_mts))));
 
   // std::cout << "RadixJoin: tts(100k): " << total_tbl_size_in_100k << ", num_tasks: " << num_tasks << std::endl;
