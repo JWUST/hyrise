@@ -1,15 +1,17 @@
 // Copyright (c) 2012 Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH. All rights reserved.
-#ifndef SRC_LIB_STORAGE_BASEDICTIONARY_H_
-#define SRC_LIB_STORAGE_BASEDICTIONARY_H_
+#pragma once
 
 #include <storage/storage_types.h>
 #include <storage/AbstractDictionary.h>
 #include <storage/DictionaryIterator.h>
 
+namespace hyrise {
+namespace storage {
+
 template <typename T>
 class BaseDictionary : public AbstractDictionary {
 public:
-
+  using value_type = T;
   virtual value_id_t addValue(T value) = 0;
 
   virtual T getValueForValueId(value_id_t value_id) = 0;
@@ -45,5 +47,5 @@ public:
 
 };
 
-#endif  // SRC_LIB_STORAGE_BASEDICTIONARY_H_
+} } // namespace hyrise::storage
 

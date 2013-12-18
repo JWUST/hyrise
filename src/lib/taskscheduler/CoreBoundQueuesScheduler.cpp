@@ -10,6 +10,9 @@
 #include "SharedScheduler.h"
 #include <memory>
 
+namespace hyrise {
+namespace taskscheduler {
+
 // register Scheduler at SharedScheduler
 namespace {
 bool registered  =
@@ -77,4 +80,5 @@ void CoreBoundQueuesScheduler::pushToQueue(std::shared_ptr<Task> task)
   }
 }
 
+} } // namespace hyrise::taskscheduler
 

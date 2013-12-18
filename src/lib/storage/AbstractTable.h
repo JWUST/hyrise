@@ -4,25 +4,27 @@
  * Contains the class definition of AbstractTable.
  *
  */
-
-#ifndef SRC_LIB_STORAGE_ABSTRACTTABLE_H_
-#define SRC_LIB_STORAGE_ABSTRACTTABLE_H_
+#pragma once
 
 #include <limits>
 #include <memory>
 #include <stdexcept>
 
+#include <functional>
 #include <vector>
 #include <string>
 
 #include "helper/types.h"
 #include "helper/locking.h"
+#include "helper/checked_cast.h"
 #include "helper/unique_id.h"
 
 #include "storage/AbstractResource.h"
 #include "storage/BaseDictionary.h"
 #include "storage/storage_types.h"
 
+namespace hyrise {
+namespace storage {
 
 class ColumnMetadata;
 class AbstractDictionary;
@@ -76,7 +78,7 @@ public:
    * @param with_containers Only used by derived classes.
    * @param compressed      Sets the compressed storage for the new table
    */
-  virtual hyrise::storage::atable_ptr_t copy_structure(const field_list_t *fields = nullptr, bool reuse_dict = false, size_t initial_size = 0, bool with_containers = true, bool compressed = false) const;
+  virtual atable_ptr_t copy_structure(const field_list_t *fields = nullptr, bool reuse_dict = false, size_t initial_size = 0, bool with_containers = true, bool compressed = false) const;
 
 
   /**
@@ -90,8 +92,17 @@ public:
    * @param initial_size    Initial size of the returned table (default=0).
    * @param with_containers Only used by derived classes.
    */
-  virtual hyrise::storage::atable_ptr_t copy_structure_modifiable(const field_list_t *fields = nullptr, size_t initial_size = 0, bool with_containers = true) const;
+  virtual atable_ptr_t copy_structure_modifiable(const field_list_t *fields = nullptr, size_t initial_size = 0, bool with_containers = true) const;
 
+  typedef std::function<std::shared_ptr<AbstractDictionary>(DataType)> abstract_dictionary_callback;
+  typedef std::function<std::shared_ptr<AbstractAttributeVector>(std::size_t)> abstract_attribute_vector_callback;
+
+  /**
+   * Copy structure with factory functions to replace attribute vectors and dictionaries
+   * in `Table` instances. May need future enhancement for more fine-grained replacement
+   * (i.e. per column or per main/delta or per partition).
+   */
+  virtual atable_ptr_t copy_structure(abstract_dictionary_callback, abstract_attribute_vector_callback) const { throw std::runtime_error("not implemented"); }
 
   /**
    * Get the value-IDs for a certain row.
@@ -281,7 +292,7 @@ public:
     // FIXME here should be some basic type checking, at least we should check with a better cast and catch the std::exception
     // FIXME horizontal containers will go down here, needs a row index, can be default 0
 
-    const auto& map = std::dynamic_pointer_cast<BaseDictionary<T>>(dictionaryAt(column, 0, table_id));
+    const auto& map = checked_pointer_cast<BaseDictionary<T>>(dictionaryAt(column, 0, table_id));
     ValueId valueId;
     valueId.table = table_id;
 
@@ -318,7 +329,7 @@ public:
     // FIXME here should be some basic type checking, at least we should check with a better cast and catch the std::exception
     // FIXME horizontal containers will go down here, needs a row index, can be default 0
 
-    const auto& map = std::dynamic_pointer_cast<BaseDictionary<T>>(dictionaryByTableId(column, table_id));
+    const auto& map = checked_pointer_cast<BaseDictionary<T>>(dictionaryByTableId(column, table_id));
     ValueId valueId;
     valueId.table = table_id;
 
@@ -347,7 +358,7 @@ public:
    */
   template<typename T>
   inline bool valueExists(const field_t column, const T value, const table_id_t table_id = 0) const {
-    const auto& map = std::dynamic_pointer_cast<BaseDictionary<T>>(dictionaryAt(column, 0, table_id));
+    const auto& map = checked_pointer_cast<BaseDictionary<T>>(dictionaryAt(column, 0, table_id));
     return map->valueExists(value);
   }
 
@@ -360,7 +371,7 @@ public:
    */
   template <typename T>
   void setValue(size_t column, size_t row, const T &value) {
-    const auto& map = std::dynamic_pointer_cast<BaseDictionary<T>>(dictionaryAt(column, row));
+    const auto& map = checked_pointer_cast<BaseDictionary<T>>(dictionaryAt(column, row));
 
     ValueId valueId;
     valueId.table = 0;
@@ -447,7 +458,7 @@ public:
    * @param dst_row Row of the target cell.
    */
   template <typename T>
-  void copyValueFrom(const hyrise::storage::c_atable_ptr_t& source, const size_t src_col, const size_t src_row, const size_t dst_col, const size_t dst_row) {
+  void copyValueFrom(const c_atable_ptr_t& source, const size_t src_col, const size_t src_row, const size_t dst_col, const size_t dst_row) {
     T value = source->getValue<T>(src_col, src_row);
     setValue<T>(dst_col, dst_row, value);
   }
@@ -462,7 +473,7 @@ public:
    * @param dst_col Column of the target cell.
    * @param dst_row Row of the target cell.
    */
-  void copyValueFrom(const hyrise::storage::c_atable_ptr_t& source, size_t src_col, size_t src_row, size_t dst_col, size_t dst_row);
+  void copyValueFrom(const c_atable_ptr_t& source, size_t src_col, size_t src_row, size_t dst_col, size_t dst_row);
 
 
   /**
@@ -474,7 +485,7 @@ public:
    * @param dst_col Column of the target cell.
    * @param dst_row Row of the target cell.
    */
-  void copyValueFrom(const hyrise::storage::c_atable_ptr_t& source, size_t src_col, ValueId vid, size_t dst_col, size_t dst_row);
+  void copyValueFrom(const c_atable_ptr_t& source, size_t src_col, ValueId vid, size_t dst_col, size_t dst_row);
 
 
   /**
@@ -486,7 +497,7 @@ public:
    * @param copy_values Also copy the values (default=true).
    * @param use_memcpy  Use memcpy for the copying (default=true).
    */
-  void copyRowFrom(const hyrise::storage::c_atable_ptr_t& source, size_t src_row, size_t dst_row, bool copy_values = true, bool use_memcpy = true);
+  void copyRowFrom(const c_atable_ptr_t& source, size_t src_row, size_t dst_row, bool copy_values = true, bool use_memcpy = true);
 
 
   /**
@@ -503,14 +514,14 @@ public:
    *
    * @param other Table to compare content to.
    */
-  bool contentEquals(const hyrise::storage::c_atable_ptr_t& other) const;
+  bool contentEquals(const c_atable_ptr_t& other) const;
 
 
   /**
    * Create of copy of this table.
    * @note Must be implemented by any derived class!
    */
-  virtual hyrise::storage::atable_ptr_t copy() const = 0;
+  virtual atable_ptr_t copy() const = 0;
 
   /**
   * get underlying attribute vectors for column
@@ -532,4 +543,5 @@ public:
   unique_id _uuid;
 };
 
-#endif  // SRC_LIB_STORAGE_ABSTRACTTABLE_H_
+} } // namespace hyrise::storage
+
