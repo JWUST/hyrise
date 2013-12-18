@@ -72,6 +72,14 @@ size_t RadixJoin::getTotalTableSize() {
   return inputTable->size() + inputTable2->size();
 }
 
+double RadixJoin::calcMinMts(double totalTblSizeIn100k) {
+  return min_mts_a() / totalTblSizeIn100k + min_mts_b(); 
+}
+
+double RadixJoin::calcA(double totalTblSizeIn100k) {
+  return a_a() * std::pow(totalTblSizeIn100k, 2) + a_b();
+}
+
 // FIXME merge logic with RadixJoinTransformation.
 std::vector<taskscheduler::task_ptr_t> RadixJoin::applyDynamicParallelization(size_t dynamicCount){
 
