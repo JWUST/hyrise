@@ -100,7 +100,7 @@ std::vector<taskscheduler::task_ptr_t> RadixJoin::applyDynamicParallelization(si
   size_t degree = std::min(dynamicCount, RadixJoin::MaxParallelizationDegree);
 
   // create ops and edges for probe side
-  auto probe_side = build_probe_side(_operatorId + "_probe", _indexed_field_definition[0], degree, _bits1, _bits2, _dependencies[0]);
+  auto probe_side = build_probe_side(_operatorId + "_probe", _indexed_field_definition[0], dynamicCount, _bits1, _bits2, _dependencies[0]);
 
   tasks.insert(tasks.end(), probe_side.begin(), probe_side.end());
 
