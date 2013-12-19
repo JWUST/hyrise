@@ -99,6 +99,11 @@ void Task::changeDependency(std::shared_ptr<Task> from, std::shared_ptr<Task> to
     
     std::lock_guard<decltype(_depMutex)> lk(_depMutex);
     // find from dependencies
+    for(size_t i = 0, size = _dependencies.size(); i < size; i++){
+      if(_dependencies[i] == from){
+        _dependencies[i] = to;
+      }
+    }
     // add new done observer
     to->addDoneObserver(std::dynamic_pointer_cast<Task>(shared_from_this()));
 }
