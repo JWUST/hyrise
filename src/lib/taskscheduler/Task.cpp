@@ -114,6 +114,14 @@ void Task::setDependencies(std::vector<std::shared_ptr<Task> > dependencies, int
     _dependencyWaitCount = 0;
 }
 
+bool Task::isDependency(task_ptr_t task) {
+  std::lock_guard<decltype(_depMutex)> lk(_depMutex);
+  return std::any_of(
+      _dependencies.begin(),
+      _dependencies.end(),
+      [task](task_ptr_t t) {return t == task;});
+}
+
 void Task::addReadyObserver(const std::shared_ptr<TaskReadyObserver>& observer) {
 
   std::lock_guard<decltype(_observerMutex)> lk(_observerMutex);
