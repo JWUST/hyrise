@@ -27,8 +27,8 @@ protected:
   virtual size_t calcMinMts(size_t totalTblSizeIn100k);
   virtual size_t calcA(size_t totalTblSizeIn100k);
   virtual double min_mts_a() { return -32.7333223568781 ; }
-  virtual double min_mts_b() { return 20.6071622571548 ; }
-  virtual double a_a() { return 0.0499042793549051 ; }
+  virtual double min_mts_b() { return -32.7333223568781 ; }
+  virtual double a_a() { return 0.01108983985665 ; }
   virtual double a_b() { return 251.463168551956 ; }
 
 private:
