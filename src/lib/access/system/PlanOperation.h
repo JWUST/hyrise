@@ -47,8 +47,8 @@ class PlanOperation : public OutputTask {
 
   /* for determineDynamicCount */
   virtual size_t getTotalTableSize();
-  virtual double calcMinMts(double totalTblSizeIn100k);
-  virtual double calcA(double totalTblSizeIn100k);
+  virtual size_t calcMinMts(size_t totalTblSizeIn100k);
+  virtual size_t calcA(size_t totalTblSizeIn100k);
   // these are a and b for two straight lines y=a*x+b used in the model.
   // override in subclasses for actual fitting parameters.
   virtual double min_mts_a() { return 0; }
