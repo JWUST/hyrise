@@ -173,11 +173,11 @@ LDFLAGS :=
 LIBS := log4cxx
 LINK_DIRS :=
 INCLUDE_DIRS :=
-
-WITH_PAPI := $(shell if [ "`papi_avail  2>&1 | grep Yes | wc -l`" -ne "0" ]; then echo 1; else echo 0; fi) 
+TOOLING :=
+WITH_PAPI := $(shell if [ "`papi_avail  2>&1 | grep Yes | wc -l`" -ne "0" ]; then echo 1; else echo 0; fi)
 WITH_MYSQL:= 1
 
-include settings.mk
+include $(PROJECT_ROOT)/settings.mk
 
 BLD ?= debug
 COMPILER ?= g++48
@@ -229,10 +229,6 @@ LDFLAGS += $(LDFLAGS.$(BLD))
 .PHONY          : all clean test ci_test ci_build ci_valgrind_test
 .DEFAULT_GOAL   := all
 
-all:
-	@echo "$@ done for BLD='$(BLD)'"
-clean:
-	rm -rf $(OBJDIR) $(all)
 
 TESTPARAM = --minimal
 test:
@@ -241,7 +237,7 @@ ci_test: test
 ci_valgrind_test: TESTPARAM =
 ci_valgrind_test: TESTPREFIX = valgrind --leak-check=full --xml=yes --xml-file=$<.memcheck
 ci_valgrind_test: test
-include makefiles/ci.mk
+include $(PROJECT_ROOT)/makefiles/ci.mk
 
 ci_build: ci_steps
 
@@ -249,20 +245,27 @@ ci_build: ci_steps
 	@mkdir -p $(@D)
 	@touch $@
 
-$(RESULT_DIR)/%.a:
+$(RESULT_DIR)/%.a: $(TOOLING)
 	$(call echo_cmd,AR $(AR) $@) $(AR) crs $@ $(filter %.o,$?)
 
-$(RESULT_DIR)/%:
+$(RESULT_DIR)/%: $(TOOLING)
 	$(call echo_cmd,LINK $(CXX) $(BLD) $@) $(CXX) $(CXXFLAGS) -o $@ $(filter %.o,$^) -Wl,-whole-archive $(addprefix -l,$(LIBS)) -Wl,-no-whole-archive $(addprefix -L,$(LINK_DIRS)) $(LDFLAGS)
 
 # Necessary to allow for a second expansion to create dirs
 .SECONDEXPANSION:
 test: $$(test-tgts)
 
-$(OBJDIR)%.cpp.o : %.cpp | $$(@D)/.fake
+all: $$(all)
+	@echo "$@ done for BLD='$(BLD)'"
+
+clean:
+	rm -rf $(OBJDIR) $(all)
+
+
+$(OBJDIR)%.cpp.o : %.cpp $(TOOLING) | $$(@D)/.fake
 	$(call echo_cmd,CXX $(CXX) $(BLD) $<) $(CXX) $(CPPFLAGS) $(CXXFLAGS) $(addprefix -I,$(INCLUDE_DIRS)) -c -o $@ $<
 
-$(OBJDIR)%.c.o : %.c | $$(@D)/.fake
+$(OBJDIR)%.c.o : %.c $(TOOLING) | $$(@D)/.fake
 	$(call echo_cmd,CC $(CC) $(BLD) $<) $(CC) $(CPPFLAGS) $(CFLAGS) $(addprefix -I,$(INCLUDE_DIRS)) -c -o $@ $<
 
 # Ensure that intermediate files (e.g. the foo.o caused by "foo : foo.c")

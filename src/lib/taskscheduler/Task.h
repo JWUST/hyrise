@@ -138,7 +138,7 @@ public:
   /*
    * check if the supplied task is a direct dependency of this task.
    */
-  bool isDependency(task_ptr_t task);
+  bool isDependency(const task_ptr_t& task);
   /*
    * adds an observer that gets notified if this task is ready to run
    */

@@ -114,7 +114,7 @@ void Task::setDependencies(std::vector<std::shared_ptr<Task> > dependencies, int
     _dependencyWaitCount = 0;
 }
 
-bool Task::isDependency(task_ptr_t task) {
+bool Task::isDependency(const task_ptr_t& task) {
   std::lock_guard<decltype(_depMutex)> lk(_depMutex);
   return std::any_of(
       _dependencies.begin(),
