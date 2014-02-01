@@ -72,9 +72,6 @@ size_t RadixJoin::getTotalTableSize() {
   return inputTable->size() + inputTable2->size();
 }
 
-size_t RadixJoin::calcMinMts(size_t totalTblSizeIn100k) {
-}
-
 size_t RadixJoin::calcA(size_t totalTblSizeIn100k) {
   return std::trunc(a_a() * std::pow(totalTblSizeIn100k, 2) + a_b());
 }
