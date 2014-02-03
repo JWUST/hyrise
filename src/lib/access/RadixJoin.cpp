@@ -103,6 +103,8 @@ std::vector<taskscheduler::task_ptr_t> RadixJoin::applyDynamicParallelization(si
   // restrict max degree of parallelism to 24 (MaxParallelizationDegree), as parallel algo for prefix sums does not really scale well
   size_t degree = std::min(dynamicCount, RadixJoin::MaxParallelizationDegree);
 
+  // TODO make sure not to use degree 0. Assertion?
+
   // create ops and edges for probe side
   auto probe_side = build_probe_side(_operatorId + "_probe", _indexed_field_definition[0], dynamicCount, _bits1, _bits2, _dependencies[0]);
 

@@ -26,10 +26,8 @@ class TableScan : public ParallelizablePlanOperation {
 
   // for determineDynamicCount
   virtual size_t getTotalTableSize();
-  // these numbers have to be positive.
-  // Otherwise a size_t overflow will occur
-  virtual double min_mts_a() { return 0.112458108565311; }
-  virtual double min_mts_b() { return 2.1182519022374; }
+  virtual double min_mts_a() { return -0.112458108565311; }
+  virtual double min_mts_b() { return -2.1182519022374; }
   virtual double a_a() { return 26.4961204051261; }
   virtual double a_b() { return 188.758012479457; }
  private:

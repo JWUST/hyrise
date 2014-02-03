@@ -25,7 +25,7 @@ size_t PlanOperation::getTotalTableSize(){
   return 0;
 }
 
-size_t PlanOperation::calcMinMts(size_t totalTblSizeIn100k) {
+signed int PlanOperation::calcMinMts(size_t totalTblSizeIn100k) {
   return std::trunc(min_mts_a() * totalTblSizeIn100k + min_mts_b());
 }
 
@@ -52,7 +52,7 @@ size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
   // this is the b of the mts = a / instances + b  model
   auto minMts = calcMinMts(totalTblSizeIn100k);
   
-  if (maxTaskRunTime < minMts) {
+  if ((signed int) maxTaskRunTime < minMts) {
     LOG4CXX_ERROR(logger, planOperationName() << ": Could not honor MTS request. Too small.");
     return 1024;
   } 
