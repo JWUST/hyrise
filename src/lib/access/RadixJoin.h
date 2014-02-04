@@ -27,8 +27,8 @@ protected:
   virtual size_t calcA(size_t totalTblSizeIn100k);
   virtual double min_mts_a() { return 0; }
   virtual double min_mts_b() { return 0; }
-  virtual double a_a() { return 0.0858974002969293/2.43; }
-  virtual double a_b() { return 1.00479789496181/2.43; }
+  virtual double a_a() { return 0.0858974002969293/1.50; }
+  virtual double a_b() { return 1.00479789496181/1.50; }
 
 private:
   uint32_t _bits1;
