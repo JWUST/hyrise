@@ -26,10 +26,10 @@ class TableScan : public ParallelizablePlanOperation {
 
   // for determineDynamicCount
   virtual size_t getTotalTableSize();
-  virtual double min_mts_a() { return -0.112458108565311; }
-  virtual double min_mts_b() { return -2.1182519022374; }
-  virtual double a_a() { return 26.4961204051261; }
-  virtual double a_b() { return 188.758012479457; }
+  virtual double min_mts_a() { return 0; }
+  virtual double min_mts_b() { return 0; }
+  virtual double a_a() { return 26.3713473453079; }
+  virtual double a_b() { return 211.089319452433; }
  private:
   std::unique_ptr<AbstractExpression> _expr;
 };

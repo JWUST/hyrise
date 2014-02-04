@@ -25,10 +25,10 @@ protected:
   // overridden from PlanOperation
   virtual size_t getTotalTableSize();
   virtual size_t calcA(size_t totalTblSizeIn100k);
-  virtual double min_mts_a() { return 0.235545522481577; }
-  virtual double min_mts_b() { return 13.179121909159; }
-  virtual double a_a() { return 0.0992349327111829; }
-  virtual double a_b() { return 1.00448171125007; }
+  virtual double min_mts_a() { return 0; }
+  virtual double min_mts_b() { return 0; }
+  virtual double a_a() { return 0.0858974002969293; }
+  virtual double a_b() { return 1.00479789496181; }
 
 private:
   uint32_t _bits1;
