@@ -19,6 +19,7 @@ public:
   uint32_t bits2() const;
 
   virtual std::vector<taskscheduler::task_ptr_t> applyDynamicParallelization(size_t dynamicCount);
+  size_t determineDynamicCount(size_t maxTaskRunTime);
 
 protected:
   // for determineDynamicCount

@@ -70,6 +70,33 @@ size_t TableScan::getTotalTableSize() {
   return inputTable->size();
 }
 
+size_t TableScan::determineDynamicCount(size_t maxTaskRunTime) {
+  if (maxTaskRunTime == 0) {
+    return 1;
+  }
+
+  const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
+  auto& inputTable = dep->getResultTable();
+  size_t tbl_size = inputTable->size();
+  // FORMERLY done in expression. I do not want to implement this in generic expression.
+  // Therefore, I copied the code from the between expression here.
+  // return _expr->determineDynamicCount(maxTaskRunTime, tbl_size);
+  auto total_tbl_size_in_100k = (tbl_size)/ 100000.0;
+
+  // this is the b of the mts = a/instances+b model
+  auto min_mts = 0.00771619629897625 * total_tbl_size_in_100k + 0.35394758074639;
+
+  if (maxTaskRunTime < min_mts) {
+    // std::cerr << "Could not honor mts request. Too small." << std::endl;
+    return 1024;
+  }
+
+  auto a = 3.07867582825491 * total_tbl_size_in_100k + 9.61889838101913;
+  int num_tasks = std::max(1,static_cast<int>(round(a/(maxTaskRunTime - min_mts))));
+
+  return num_tasks;
+}
+
 std::vector<taskscheduler::task_ptr_t> TableScan::applyDynamicParallelization(size_t dynamicCount){
 
   std::vector<taskscheduler::task_ptr_t> tasks;
