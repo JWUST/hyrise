@@ -4,6 +4,7 @@
 #include <boost/preprocessor.hpp>
 #include <boost/preprocessor/seq/elem.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
+#include "tbb/concurrent_vector.h"
 
 
 
@@ -39,7 +40,7 @@
 #define EXPR_GET_EXPRESSION(r, data, i , seq_field) BOOST_PP_SEQ_ELEM(i, data) EXPR_COMPARE_FIELD( BOOST_PP_SEQ_ELEM(0, seq_field), BOOST_PP_SEQ_ELEM(2, seq_field) , row)
 
 #define EXPR_BUILD_LOOP(pl, seq_of_fields, seq_logic) \
-        auto pl = new pos_list_t; \
+        auto pl = new tbb::concurrent_vector<pos_t>(); \
         /* our position in the logical table */ \
         size_t lower = 0; \
         /* start position for the scan relative to the part */ \
@@ -52,11 +53,6 @@
         part_size -= _with_delta ? 0 : 1;\
         /* sum up all part's sizes and reserve pl to that size */ \
         /* avoid costly reallocation. Assumes a high selectivity */ \
-        size_t total_size = 0; \
-        for (size_t part = 0; part < part_size; ++part) { \
-          total_size += first_vector[part]->size(); \
-        } \
-        pl->reserve(total_size); \
         for(size_t part =0; part < part_size; ++part) {\
                 auto rows_in_part = first_vector[part]->size(); \
                 /* if stop is below lower, we are running out of the range we need to scan and can stop! */ \
@@ -96,7 +92,7 @@
 	name::name(const Json::Value& val) : _orig_json_val(val) {} \
 	pos_list_t* name::match(const size_t start, const size_t stop) {\
 		EXPR_BUILD_LOOP(the_result, seq_of_fields, seq_logic );\
-		return the_result;\
+                return new pos_list_t(the_result->begin(), the_result->end());\
 	}\
 	void name::walk(const std::vector<hyrise::storage::c_atable_ptr_t> &l) {\
 		_store = std::dynamic_pointer_cast<const storage::Store>(l[0]);\
