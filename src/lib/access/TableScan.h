@@ -20,7 +20,6 @@ class TableScan : public ParallelizablePlanOperation {
   const std::string vname() { return "TableScan"; }
   virtual std::vector<taskscheduler::task_ptr_t> applyDynamicParallelization(size_t dynamicCount);
   static std::shared_ptr<PlanOperation> parse(const Json::Value& data);
-  size_t determineDynamicCount(size_t maxTaskRunTime);
  protected:
   void setupPlanOperation();
   void executePlanOperation();

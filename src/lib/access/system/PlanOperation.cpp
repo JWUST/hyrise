@@ -34,7 +34,36 @@ size_t PlanOperation::calcA(size_t  totalTblSizeIn100k) {
 }
 
 size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
-  throw std::runtime_error("Implement derived");
+  // this can never be satisfied. Default to NO parallelization.
+  if (maxTaskRunTime == 0) {
+    return 1;
+  }
+  
+  auto totalTableSize = getTotalTableSize();
+  
+  // Table is empty or in case of RadixJoin at least one operand is empty.
+  // Also if getTotalTableSize() uses default implementation.
+  if (totalTableSize == 0) {
+    return 1;
+  }
+  
+  size_t totalTblSizeIn100k = std::trunc(totalTableSize / 100000.0);
+
+  // this is the b of the mts = a / instances + b  model
+  auto minMts = calcMinMts(totalTblSizeIn100k);
+  
+  if ((signed int) maxTaskRunTime < minMts) {
+    LOG4CXX_ERROR(logger, planOperationName() << ": Could not honor MTS request. Too small.");
+    return 1024;
+  } 
+
+  auto a = calcA(totalTblSizeIn100k); 
+  // Div by 0 not possible since maxTaskRunTime < minMtx, see above.
+  size_t numTasks = std::max(1, static_cast<int>(round(a/(maxTaskRunTime - minMts))));
+
+  LOG4CXX_DEBUG(logger, planOperationName() << ": tts(in 100k): " << totalTblSizeIn100k << ", numTasks: " << numTasks);
+
+  return numTasks;
 }
 
 PlanOperation::~PlanOperation() = default;

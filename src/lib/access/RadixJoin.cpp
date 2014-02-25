@@ -76,41 +76,6 @@ size_t RadixJoin::calcA(size_t totalTblSizeIn100k) {
   return std::trunc(a_a() * std::pow(totalTblSizeIn100k, 2) + a_b());
 }
 
-size_t RadixJoin::determineDynamicCount(size_t maxTaskRunTime) {
-
-
-  if (maxTaskRunTime == 0) {
-    return 1;
-  }
-
-  const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
-  const auto& dep2 = std::dynamic_pointer_cast<PlanOperation>(_dependencies[1]);
-
-  auto& inputTable = dep->getResultTable();
-  auto& inputTable2 = dep2->getResultTable(); 
-
-  if (!inputTable || !inputTable2) { // if either input is empty, no parallelization.
-    return 1;
-  }
-
-  auto total_tbl_size_in_100k = (inputTable->size() + inputTable2->size())/ 100000.0;
-
-  // this is the b of the mts = a/instances+b model
-  auto min_mts = 0.244257632181208 * total_tbl_size_in_100k + 1.95211709338596;
-
-  if (maxTaskRunTime < min_mts) {
-    // std::cerr << "Could not honor mts request. Too small." << std::endl;
-    return 1024;
-  }
-
-  auto a = 5.34495284067852 * total_tbl_size_in_100k - 7.83756544184117;
-  int num_tasks = std::max(1,static_cast<int>(round(a/(maxTaskRunTime - min_mts))));
-
-  // std::cout << "RadixJoin: tts(100k): " << total_tbl_size_in_100k << ", num_tasks: " << num_tasks << std::endl;
-
-
-  return num_tasks;
-}
 // FIXME merge logic with RadixJoinTransformation.
 std::vector<taskscheduler::task_ptr_t> RadixJoin::applyDynamicParallelization(size_t dynamicCount){
 
