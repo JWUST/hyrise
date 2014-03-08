@@ -28,8 +28,8 @@ class TableScan : public ParallelizablePlanOperation {
   virtual size_t getTotalTableSize();
   virtual double min_mts_a() { return 0; }
   virtual double min_mts_b() { return 0; }
-  virtual double a_a() { return 26.3713473453079/2.99; }
-  virtual double a_b() { return 211.089319452433/2.99; }
+  virtual double a_a() { return 26.3713473453079/7; }
+  virtual double a_b() { return 211.089319452433/7; }
  private:
   std::unique_ptr<AbstractExpression> _expr;
 };
