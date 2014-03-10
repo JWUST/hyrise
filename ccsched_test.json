@@ -1,0 +1,27 @@
+{
+    "operators": {
+        "load0": {
+            "type": "TableLoad",
+            "table": "companies",
+            "filename": "cctable0.tbl"
+        },
+        "load1": {
+            "type": "TableLoad",
+            "table": "employees",
+            "filename": "cctable1.tbl"
+        },
+        "scan0" : {
+            "type": "CCTableScan"
+        },
+        "scan1" : {
+            "type": "CCTableScan"
+        },
+        "join" : {
+            "type": "CCHashJoin"
+        },
+	"Nop":{
+		"type": "NoOp"
+	}
+    },
+    "edges": [["load0", "scan0"], ["load1", "scan1"], ["scan0", "join"], ["scan1", "join"], ["join", "Nop"]]
+}
