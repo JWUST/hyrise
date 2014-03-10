@@ -3,8 +3,9 @@
 #pragma once
 
 #include <queue>
+#include <algorithm>
 #include "NodeBoundQueuesScheduler.h"
-#include "CacheConsciousQueue.h"
+#include "CacheConsciousPriorityQueue.h"
 
 namespace hyrise {
 namespace taskscheduler {
@@ -20,20 +21,20 @@ namespace taskscheduler {
 * level scheduler
 */
 template <class QUEUE>
-class CacheConsciousScheduler :
+class CacheConsciousPriorityScheduler :
   virtual public NodeBoundQueuesScheduler<QUEUE>,
   virtual public ThreadLevelQueuesScheduler<QUEUE>, 
   public TaskDoneObserver {
     using ThreadLevelQueuesScheduler<QUEUE>::_logger;
 protected:
   std::queue<std::shared_ptr<Task> > _waitQueue;
-  std::mutex _cachesMutex;
+  AbstractTaskScheduler::lock_t _cachesMutex;
 public:
-  CacheConsciousScheduler(int queues): ThreadLevelQueuesScheduler<QUEUE>(queues), NodeBoundQueuesScheduler<QUEUE>(queues){};
-  ~CacheConsciousScheduler(){};
+  CacheConsciousPriorityScheduler(int queues): ThreadLevelQueuesScheduler<QUEUE>(queues), NodeBoundQueuesScheduler<QUEUE>(queues){};
+  ~CacheConsciousPriorityScheduler(){};
 
   virtual std::shared_ptr<typename ThreadLevelQueuesScheduler<QUEUE>::task_queue_t> createTaskQueue(int node, int threads){
-    return std::make_shared<CacheConsciousQueue<QUEUE>>(node, threads);
+    return std::make_shared<CacheConsciousPriorityQueue<QUEUE>>(node, threads);
   }
   
   void schedule(std::shared_ptr<Task> task) {
@@ -46,26 +47,25 @@ public:
       task->unlockForNotifications();
       LOG4CXX_INFO(_logger, "Task is ready, putting int onto wait queue.");
       {
-        std::lock_guard<std::mutex> lk(_cachesMutex);
+        std::lock_guard<AbstractTaskScheduler::lock_t> lk(_cachesMutex);
         _waitQueue.push(task);
       }
       tryExecuteFirstTaskInQueue();
     }
   }
 
-  
   void tryExecuteFirstTaskInQueue() {  
-    std::lock_guard<std::mutex> lk(_cachesMutex);
+    std::lock_guard<AbstractTaskScheduler::lock_t> lk(_cachesMutex);
     if (_waitQueue.empty()) return;
     std::shared_ptr<Task> task = _waitQueue.front();
 
     LOG4CXX_INFO(_logger, "first task in queue is " << task->vname());
 
-    std::shared_ptr<CacheConsciousQueue<QUEUE>> cacheWithLowestPerformanceImpact = NULL;
+    std::shared_ptr<CacheConsciousPriorityQueue<QUEUE>> cacheWithLowestPerformanceImpact = NULL;
     for (auto c : ThreadLevelQueuesScheduler<QUEUE>::_queues) {
-      auto cache = std::dynamic_pointer_cast<CacheConsciousQueue<QUEUE>>(c);
+      auto cache = std::dynamic_pointer_cast<CacheConsciousPriorityQueue<QUEUE>>(c);
       LOG4CXX_INFO(_logger, "Cache filling of " << cache->getNode() << " is " << cache->getFilling());
-      if (cache->is_free()) {
+      if (cache->is_free(task)) {
         if (cacheWithLowestPerformanceImpact == NULL ||
             cache->calculate_performance_with_op(task) < cacheWithLowestPerformanceImpact->calculate_performance_with_op(task)) {
           cacheWithLowestPerformanceImpact = cache;
