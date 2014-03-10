@@ -20,7 +20,7 @@ class NodeBoundQueue : virtual public ThreadLevelQueue<QUEUE> {
 protected:
 	size_t _node;
 public:
-  NodeBoundQueue(size_t core, size_t threads): ThreadLevelQueue<QUEUE>(threads), _node(core) {}
+  NodeBoundQueue(size_t node, size_t threads): ThreadLevelQueue<QUEUE>(threads), _node(node) {}
   ~NodeBoundQueue(){}
 
   virtual void init(){
