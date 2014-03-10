@@ -51,7 +51,9 @@ public:
       task->unlockForNotifications();
       LOG4CXX_INFO(_logger, "Task is ready, putting int onto wait queue.");
       //std::cout << "pushed " << task->vname() << std::endl;
+      _cachesMutex.lock();
       _waitQueue.push(task);
+      _cachesMutex.unlock();
       tryExecuteFirstTaskInQueue();
     }
   }
