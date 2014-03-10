@@ -24,7 +24,7 @@ namespace taskscheduler {
 std::vector<std::shared_ptr<Task>> Task::applyDynamicParallelization(size_t dynamicCount){
   LOG4CXX_ERROR(_logger, "Dynamic Parallelization has not been implemented for this operator.");
   LOG4CXX_ERROR(_logger, "Running without parallelization.");
-  return { shared_from_this() };
+  return { my_enable_shared_from_this<Task>::shared_from_this() };
 }
 
 void Task::lockForNotifications() {
@@ -45,7 +45,7 @@ void Task::notifyReadyObservers() {
   }
 	for (const auto& target : targets) {
     if (auto observer = target.lock()) {
-      observer->notifyReady(shared_from_this());  
+      observer->notifyReady(my_enable_shared_from_this<Task>::shared_from_this());  
     }
 	}
 }
@@ -60,7 +60,7 @@ void Task::notifyDoneObservers() {
   }
 	for (const auto& target : targets) {
     if (auto observer = target.lock()) {
-      observer->notifyDone(shared_from_this());  
+      observer->notifyDone(my_enable_shared_from_this<Task>::shared_from_this());  
     }
 	}
 }
@@ -74,7 +74,7 @@ void Task::addDependency(std::shared_ptr<Task> dependency) {
     _dependencies.push_back(dependency);
     ++_dependencyWaitCount;
   }
-  dependency->addDoneObserver(shared_from_this());
+  dependency->addDoneObserver(my_enable_shared_from_this<Task>::shared_from_this());
 }
 
 void Task::addDoneDependency(std::shared_ptr<Task> dependency) {
@@ -105,7 +105,7 @@ void Task::changeDependency(std::shared_ptr<Task> from, std::shared_ptr<Task> to
       }
     }
     // add new done observer
-    to->addDoneObserver(std::dynamic_pointer_cast<Task>(shared_from_this()));
+    to->addDoneObserver(std::dynamic_pointer_cast<Task>(my_enable_shared_from_this<Task>::shared_from_this()));
 }
 
 void Task::setDependencies(std::vector<std::shared_ptr<Task> > dependencies, int count) {

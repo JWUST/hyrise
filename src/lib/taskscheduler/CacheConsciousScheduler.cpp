@@ -6,6 +6,7 @@
  */
 
 #include "CacheConsciousScheduler.h"
+#include "SharedScheduler.h"
 
 namespace hyrise {
 namespace taskscheduler {
@@ -15,7 +16,7 @@ class Scheduler;
 // register Scheduler at SharedScheduler
 namespace {
 bool registered  =
-    SharedScheduler::registerScheduler<CacheConsciousScheduler>("CacheConsciousScheduler");
+    SharedScheduler::registerScheduler<CacheConsciousScheduler<BasicQueueType>>("CacheConsciousScheduler");
 }
 
 }}

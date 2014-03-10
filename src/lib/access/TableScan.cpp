@@ -76,7 +76,7 @@ std::vector<taskscheduler::task_ptr_t> TableScan::applyDynamicParallelization(si
 
   // if no parallelization is necessary, just return this task again as is
   if (dynamicCount <= 1) {
-    tasks.push_back(shared_from_this());
+    tasks.push_back(my_enable_shared_from_this<Task>::shared_from_this());
     return tasks;
   }
 
@@ -95,7 +95,7 @@ std::vector<taskscheduler::task_ptr_t> TableScan::applyDynamicParallelization(si
   // set part and count for this task as first task
   setPart(0);
   setCount(dynamicCount);
-  tasks.push_back(std::static_pointer_cast<taskscheduler::Task>(shared_from_this()));
+  tasks.push_back(std::static_pointer_cast<taskscheduler::Task>(my_enable_shared_from_this<Task>::shared_from_this()));
   std::string opIdBase = _operatorId;
   _operatorId = opIdBase + "_0";
 
@@ -146,7 +146,7 @@ std::vector<taskscheduler::task_ptr_t> TableScan::applyDynamicParallelization(si
 
   // set union as dependency to all successors
   for (auto successor : successors)
-    successor->changeDependency(std::dynamic_pointer_cast<taskscheduler::Task>(shared_from_this()), unionall);
+    successor->changeDependency(std::dynamic_pointer_cast<taskscheduler::Task>(my_enable_shared_from_this<Task>::shared_from_this()), unionall);
 
   if (auto responseTask = getResponseTask()) {
     responseTask->registerPlanOperation(unionall);

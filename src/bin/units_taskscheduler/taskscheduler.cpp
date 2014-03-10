@@ -26,22 +26,24 @@ using ::testing::ValuesIn;
 
 // list schedulers to be tested
 std::vector<std::string> getSchedulersToTest() {
- return {"WSThreadLevelQueuesScheduler",
-         "ThreadLevelQueuesScheduler",
-         "CoreBoundQueuesScheduler",
-         "WSCoreBoundQueuesScheduler",
-         "WSThreadLevelPriorityQueuesScheduler",
-         "ThreadLevelPriorityQueuesScheduler",
-         "CoreBoundPriorityQueuesScheduler",
-         "WSCoreBoundPriorityQueuesScheduler",
-         "CentralScheduler",
-         "CentralPriorityScheduler",
-         "ThreadPerTaskScheduler",
-         "DynamicPriorityScheduler",
-         "DynamicScheduler",
-         "NodeBoundQueuesScheduler",
-         "WSNodeBoundQueuesScheduler",
-         "NodeBoundPriorityQueuesScheduler",
+ return {
+         "CacheConsciousScheduler",
+       //"WSThreadLevelQueuesScheduler",
+       //"ThreadLevelQueuesScheduler",
+       //"CoreBoundQueuesScheduler",
+       //"WSCoreBoundQueuesScheduler",
+       //"WSThreadLevelPriorityQueuesScheduler",
+       //"ThreadLevelPriorityQueuesScheduler",
+       //"CoreBoundPriorityQueuesScheduler",
+       //"WSCoreBoundPriorityQueuesScheduler",
+       //"CentralScheduler",
+       //"CentralPriorityScheduler",
+       //"ThreadPerTaskScheduler",
+       //"DynamicPriorityScheduler",
+       //"DynamicScheduler",
+       //"NodeBoundQueuesScheduler",
+       //"WSNodeBoundQueuesScheduler",
+       //"NodeBoundPriorityQueuesScheduler",
          "WSNodeBoundPriorityQueuesScheduler"
        };
 }

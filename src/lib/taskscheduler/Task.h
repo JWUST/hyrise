@@ -23,8 +23,23 @@ namespace taskscheduler {
 
 class Task;
 class AbstractTaskScheduler;
+class virt_enable_shared_from_this :
+   public std::enable_shared_from_this<virt_enable_shared_from_this>
+{
+ public:
+   virtual ~virt_enable_shared_from_this() {}
+};
 
-class TaskReadyObserver {
+template <class T>
+class my_enable_shared_from_this : virtual public virt_enable_shared_from_this
+{
+ public:
+   std::shared_ptr<T> shared_from_this() {
+      return std::dynamic_pointer_cast<T>(virt_enable_shared_from_this::shared_from_this());
+   }
+};
+
+class TaskReadyObserver : public my_enable_shared_from_this<TaskReadyObserver> {
   /*
    * notify that task has changed state
    */
@@ -34,7 +49,7 @@ public:
   };
 };
 
-class TaskDoneObserver {
+class TaskDoneObserver : public my_enable_shared_from_this<TaskDoneObserver> {
   /*
    * notify that task has changed state
    */
@@ -47,7 +62,7 @@ public:
 /*
  * a task that can be scheduled by a Task Scheduler
  */
-class Task : public TaskDoneObserver, public std::enable_shared_from_this<Task> {
+class Task : public TaskDoneObserver, public my_enable_shared_from_this<Task> {
 
 public:
   static const int DEFAULT_PRIORITY = 999;
@@ -224,6 +239,10 @@ public:
     _sessionId = sessionId;
   }
 
+  virtual size_t getFootprint()
+  {
+    return 0;
+  }
   // used in the DynamicPriorityScheduler
   // if true and task is ParallizablePlanOperation the number of instances is determined
   // by an operators determineDynamicCount operation.

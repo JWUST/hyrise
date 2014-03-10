@@ -20,8 +20,7 @@ typedef ThreadLevelQueuesScheduler<BasicQueueType>  ThreadLevelBasicQueuesSchedu
 template <class QUEUE>
 class ThreadLevelQueuesScheduler : 
   public AbstractTaskScheduler,
-  public TaskReadyObserver,
-  public std::enable_shared_from_this<TaskReadyObserver> {
+  public TaskReadyObserver {
 
 public:
   typedef ThreadLevelQueue<QUEUE> task_queue_t;

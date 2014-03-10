@@ -24,8 +24,7 @@ typedef ThreadLevelQueue<tbb::concurrent_queue<std::shared_ptr<Task>>> TBBThread
 template<class QUEUE>
 class ThreadLevelQueue : 
   public AbstractTaskScheduler,
-  public TaskReadyObserver,
-  public std::enable_shared_from_this<TaskReadyObserver> {
+  public TaskReadyObserver {
 protected:
   QUEUE _runQueue;
   size_t _threadCount;

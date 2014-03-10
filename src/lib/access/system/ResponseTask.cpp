@@ -93,7 +93,7 @@ void ResponseTask::registerPlanOperation(const std::shared_ptr<PlanOperation>& p
   
   planOp->setGeneratedKeysData(genKeys);
 
-  const auto responseTaskPtr = std::dynamic_pointer_cast<ResponseTask>(shared_from_this());
+  const auto responseTaskPtr = std::dynamic_pointer_cast<ResponseTask>(my_enable_shared_from_this<Task>::shared_from_this());
   planOp->setResponseTask(responseTaskPtr);
 
   perfMutex.lock();

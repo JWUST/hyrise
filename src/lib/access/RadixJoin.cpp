@@ -163,7 +163,7 @@ std::vector<taskscheduler::task_ptr_t> RadixJoin::applyDynamicParallelization(si
  
     // set the single NestedLoopEquiJoin j as a dependency to original successors
     for (auto successor : successors) {
-      successor->changeDependency(std::dynamic_pointer_cast<taskscheduler::Task>(shared_from_this()),j);
+      successor->changeDependency(std::dynamic_pointer_cast<taskscheduler::Task>(my_enable_shared_from_this<Task>::shared_from_this()),j);
     }
 
     tasks.push_back(j);
@@ -176,7 +176,7 @@ std::vector<taskscheduler::task_ptr_t> RadixJoin::applyDynamicParallelization(si
 
     // set union as dependency to all successors
     for (auto successor : successors)
-      successor->changeDependency(shared_from_this(), unionall);
+      successor->changeDependency(my_enable_shared_from_this<Task>::shared_from_this(), unionall);
 
     // calculate partitions that need to be worked by join
     // if join_par > partitions, set join_par to partitions

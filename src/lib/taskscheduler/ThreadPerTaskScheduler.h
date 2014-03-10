@@ -34,8 +34,7 @@ public:
 */ 
 class ThreadPerTaskScheduler : 
   public AbstractTaskScheduler,
-  public TaskReadyObserver,
-  public std::enable_shared_from_this<TaskReadyObserver> {
+  public TaskReadyObserver {
   typedef std::unordered_set<std::shared_ptr<Task> > waiting_tasks_t;
     // scheduler status
     scheduler_status_t _status;
