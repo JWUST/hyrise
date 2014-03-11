@@ -1,4 +1,5 @@
 {
+	"priority": 2,
     "operators": {
         "load0": {
             "type": "TableLoad",
