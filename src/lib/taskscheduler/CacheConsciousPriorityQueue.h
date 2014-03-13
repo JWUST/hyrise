@@ -97,9 +97,11 @@ public:
     bool is_free(task_ptr_t task) {
         int maxPrio = getMaxPriority();
         int prio = task->getPriority();
-        if(prio > maxPrio)
-            return true;
-        else if(prio <= maxPrio)
+        /*if(prio > maxPrio){
+            std::cout << "force prio" << std::endl;
+            return false;
+        }*/
+        if(prio <= maxPrio)
             return (_running_ops < _threadCount);
         else{
             if(calculate_performance_with_op(task) < PRIO_THRESHOLD)
