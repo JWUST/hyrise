@@ -4,8 +4,10 @@
 
 #include <queue>
 #include <algorithm>
+#include <tbb/concurrent_priority_queue.h>
 #include "NodeBoundQueuesScheduler.h"
 #include "CacheConsciousPriorityQueue.h"
+
 
 namespace hyrise {
 namespace taskscheduler {
@@ -27,7 +29,10 @@ class CacheConsciousPriorityScheduler :
   public TaskDoneObserver {
     using ThreadLevelQueuesScheduler<QUEUE>::_logger;
 protected:
-  std::queue<std::shared_ptr<Task> > _waitQueue;
+  tbb::concurrent_priority_queue<std::shared_ptr<Task> , CompareTaskPtr> _waitQueue;
+  // holds the next task to be pushed in case all queues are busy;
+  // workaround as tbb prio queue has no "front" method
+  std::shared_ptr<Task> _nextTask;
   AbstractTaskScheduler::lock_t _cachesMutex;
 public:
   CacheConsciousPriorityScheduler(int queues): ThreadLevelQueuesScheduler<QUEUE>(queues), NodeBoundQueuesScheduler<QUEUE>(queues){};
@@ -44,41 +49,55 @@ public:
       task->addReadyObserver(my_enable_shared_from_this<TaskReadyObserver>::shared_from_this());
       task->unlockForNotifications();
     } else {
+      //if(task->getFootprint() > 0){
       task->unlockForNotifications();
-      LOG4CXX_INFO(_logger, "Task is ready, putting int onto wait queue.");
-      {
-        std::lock_guard<AbstractTaskScheduler::lock_t> lk(_cachesMutex);
-        _waitQueue.push(task);
-      }
+      
+      //std::lock_guard<AbstractTaskScheduler::lock_t> lk(_cachesMutex);
+      _waitQueue.push(task);
       tryExecuteFirstTaskInQueue();
     }
   }
 
-  void tryExecuteFirstTaskInQueue() {  
+  void tryExecuteFirstTaskInQueue() {
+    LOG4CXX_INFO(_logger, "entering tryexecute next");
     std::lock_guard<AbstractTaskScheduler::lock_t> lk(_cachesMutex);
-    if (_waitQueue.empty()) return;
-    std::shared_ptr<Task> task = _waitQueue.front();
 
-    LOG4CXX_INFO(_logger, "first task in queue is " << task->vname());
+    if(!_nextTask){
+      LOG4CXX_INFO(_logger, "_nextTask not set");
+      if(!_waitQueue.try_pop(_nextTask)){
+        LOG4CXX_INFO(_logger, "No task in wait queue - return ");
+        // no task waiting, no task in queue -> return
+        return;
+      } 
+    }
+    
+    //if (_waitQueue.empty()) return;
+    //std::shared_ptr<Task> task = _waitQueue.front();
+
+    LOG4CXX_INFO(_logger, "first task in queue is " << _nextTask->vname());
 
     std::shared_ptr<CacheConsciousPriorityQueue<QUEUE>> cacheWithLowestPerformanceImpact = NULL;
+    size_t lowestPerformance = 0;
     for (auto c : ThreadLevelQueuesScheduler<QUEUE>::_queues) {
       auto cache = std::dynamic_pointer_cast<CacheConsciousPriorityQueue<QUEUE>>(c);
       LOG4CXX_INFO(_logger, "Cache filling of " << cache->getNode() << " is " << cache->getFilling());
-      if (cache->is_free(task)) {
-        if (cacheWithLowestPerformanceImpact == NULL ||
-            cache->calculate_performance_with_op(task) < cacheWithLowestPerformanceImpact->calculate_performance_with_op(task)) {
+      if (cache->is_free(_nextTask)) {
+        if (cacheWithLowestPerformanceImpact == NULL) {
           cacheWithLowestPerformanceImpact = cache;
+          lowestPerformance = cache->calculate_performance_with_op(_nextTask);
+        }
+        else if(cache->calculate_performance_with_op(_nextTask) < lowestPerformance){
+          cacheWithLowestPerformanceImpact = cache;
+          lowestPerformance = cache->calculate_performance_with_op(_nextTask);
         }
       }
     }
-  
     // if we found one, add the task to that cache
     if (cacheWithLowestPerformanceImpact) {
-      LOG4CXX_INFO(_logger, "Push task " << task->vname() << " to cache " << cacheWithLowestPerformanceImpact->getNode());
-      _waitQueue.pop();
-      task->addDoneObserver(my_enable_shared_from_this<TaskDoneObserver>::shared_from_this());
-      cacheWithLowestPerformanceImpact->schedule(task);
+      LOG4CXX_INFO(_logger, "Push task " << _nextTask->vname() << " to cache " << cacheWithLowestPerformanceImpact->getNode());
+      _nextTask->addDoneObserver(my_enable_shared_from_this<TaskDoneObserver>::shared_from_this());
+      cacheWithLowestPerformanceImpact->schedule(_nextTask);
+      _nextTask.reset();
     } else {
       LOG4CXX_INFO(_logger, "No free cache, leaving task in WaitQueue");
     }
@@ -88,12 +107,14 @@ public:
   void notifyDone(std::shared_ptr<Task> task) {
     // execute the next waiting task
     LOG4CXX_INFO(_logger, "NotifyDone " << task->vname());
-    tryExecuteFirstTaskInQueue();
+    if(ThreadLevelQueuesScheduler<QUEUE>::_status == AbstractTaskScheduler::RUN)
+      tryExecuteFirstTaskInQueue();
   }
   
   void notifyReady(std::shared_ptr<Task> task) {
-    LOG4CXX_INFO(_logger, "NotifyReady" << task->vname());
-    schedule(task);
+    LOG4CXX_INFO(_logger, "notifyReady" << task->vname());
+    if(ThreadLevelQueuesScheduler<QUEUE>::_status == AbstractTaskScheduler::RUN)
+      schedule(task);
   }
 
 };

@@ -75,7 +75,7 @@ public:
       }
     }
 
-    size_t calculate_performance_with_op(std::shared_ptr<Task> new_op) {
+    size_t calculate_performance_with_op(const std::shared_ptr<Task> & new_op) {
         //size_t total_footprint = 0;
         /*
         auto ops = operations();
@@ -107,13 +107,13 @@ public:
 protected:
 
 
-    void startTask(task_ptr_t task){
+    void startTask(const std::shared_ptr<Task> & task){
         _cache_filling += task->getFootprint();
         LOG4CXX_INFO(_logger, "Cache " << NodeBoundQueue<QUEUE>::_node << "; update filling " <<  _cache_filling);
         _running_ops++;
     }
 
-    void stopTask(task_ptr_t task){
+    void stopTask(const std::shared_ptr<Task> & task){
         _cache_filling -= task->getFootprint();
         _running_ops--;
     }

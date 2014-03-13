@@ -100,8 +100,10 @@ public:
         else{
             if(calculate_performance_with_op(task) < PRIO_THRESHOLD)
                 return (_running_ops < _threadCount);
-            else
+            else{
+                //std::cout << "sorry, no option" << std::endl;
                 return false;
+            }
         }
     }
 
@@ -121,7 +123,8 @@ protected:
         std::lock_guard<AbstractTaskScheduler::lock_t> lk(_prioLock);
         _cache_filling += task->getFootprint();
         _running_ops++;
-        setPriority(task->getPriority());
+        if(!(task->vname() == "RequestParseTask"))
+            setPriority(task->getPriority());
          LOG4CXX_INFO(_logger, "Cache " << NodeBoundQueue<QUEUE>::_node << "; update filling " <<  _cache_filling);
     }
 
@@ -129,7 +132,8 @@ protected:
         std::lock_guard<AbstractTaskScheduler::lock_t> lk(_prioLock);
         _cache_filling -= task->getFootprint();
         _running_ops--;
-        unsetPriority(task->getPriority());
+        if(!(task->vname() == "RequestParseTask"))
+            unsetPriority(task->getPriority());
     }
 
 private:

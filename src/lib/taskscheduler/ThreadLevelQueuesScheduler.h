@@ -84,6 +84,7 @@ public:
    */
   virtual void shutdown(){
     if(_status != STOPPED){
+      _status = TO_STOP;
       for(size_t i = 0; i < _queueCount; i++)
 		    _queues[i]->shutdown();
       _status = STOPPED;

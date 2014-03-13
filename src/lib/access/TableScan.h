@@ -30,6 +30,7 @@ class TableScan : public ParallelizablePlanOperation {
   virtual double min_mts_b() { return -0.0850757329978712; }
   virtual double a_a() { return 3.38149153671817; }
   virtual double a_b() { return 12.2562615548958; }
+
  private:
   std::unique_ptr<AbstractExpression> _expr;
 };
