@@ -34,7 +34,6 @@ void CCTableScan::setupPlanOperation() {
 
 void CCTableScan::executePlanOperation() {
   storage::pos_list_t *posList = new pos_list_t;
-  pl->reserve(_attribute_vector->size());
   for (size_t i = 0; i < _attribute_vector->size(); i++) {
     auto val = _attribute_vector->getRef(0, i);
     if (_dictionary->getValueForValueId(val) >= 10000) {

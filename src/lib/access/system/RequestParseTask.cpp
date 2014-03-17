@@ -32,39 +32,33 @@
 namespace hyrise {
 namespace access {
 
-bool registered = net::Router::registerRoute<RequestParseTask>(
-    "/query/",
-    net::Router::route_t::CATCH_ALL);
+bool registered = net::Router::registerRoute<RequestParseTask>("/query/", net::Router::route_t::CATCH_ALL);
 
 RequestParseTask::RequestParseTask(net::AbstractConnection* connection)
     : _connection(connection),
       _responseTask(std::make_shared<ResponseTask>(connection)),
-      _queryStart(get_epoch_nanoseconds()){
+      _queryStart(get_epoch_nanoseconds()) {
   connection->setResponseTask(_responseTask);
 }
 
 RequestParseTask::~RequestParseTask() {}
 
-std::string RequestParseTask::name() {
-  return "RequestParseTask";
-}
+std::string RequestParseTask::name() { return "RequestParseTask"; }
 
-const std::string RequestParseTask::vname() {
-  return "RequestParseTask";
-}
+const std::string RequestParseTask::vname() { return "RequestParseTask"; }
 
 namespace {
 log4cxx::LoggerPtr _logger(log4cxx::Logger::getLogger("hyrise.access"));
 log4cxx::LoggerPtr _query_logger(log4cxx::Logger::getLogger("hyrise.access.queries"));
 }
 
-std::string hash(const std::string &v) {
+std::string hash(const std::string& v) {
   const std::string& jsonData = v;
 
   std::array<unsigned char, 20> hash;
   SHA1_CTX ctx;
   SHA1Init(&ctx);
-  SHA1Update(&ctx, (const unsigned char *) jsonData.c_str(), jsonData.size());
+  SHA1Update(&ctx, (const unsigned char*)jsonData.c_str(), jsonData.size());
   SHA1Final(hash.data(), &ctx);
 
   return std::string(reinterpret_cast<const char*>(hash.data()), 20);
@@ -73,7 +67,7 @@ std::string hash(const std::string &v) {
 void RequestParseTask::operator()() {
   assert((_responseTask != nullptr) && "Response needs to be set");
   std::shared_ptr<hyrise::taskscheduler::AbstractTaskScheduler> scheduler;
-  if(_scheduler)
+  if (_scheduler)
     scheduler = _scheduler;
   else
     scheduler = taskscheduler::SharedScheduler::getInstance().getScheduler();
@@ -123,19 +117,18 @@ void RequestParseTask::operator()() {
       const std::string& final_hash = hash(query_string);
       std::shared_ptr<Task> result = nullptr;
 
-      if(request_data.isMember("priority"))
+      if (request_data.isMember("priority"))
         priority = request_data["priority"].asInt();
-      if(request_data.isMember("sessionId"))
+      if (request_data.isMember("sessionId"))
         sessionId = request_data["sessionId"].asInt();
       _responseTask->setPriority(priority);
       _responseTask->setSessionId(sessionId);
       _responseTask->setRecordPerformanceData(recordPerformance);
       try {
-        tasks = QueryParser::instance().deserialize(
-                  QueryTransformationEngine::getInstance()->transform(request_data),
-                  &result);
-
-      } catch (const std::exception &ex) {
+        tasks = QueryParser::instance().deserialize(QueryTransformationEngine::getInstance()->transform(request_data),
+                                                    &result);
+      }
+      catch (const std::exception& ex) {
         // clean up, so we don't end up with a whole mess due to thrown exceptions
         LOG4CXX_ERROR(_logger, "Received\n:" << request_data);
         LOG4CXX_ERROR(_logger, "Exception thrown during query deserialization:\n" << ex.what());
@@ -162,7 +155,7 @@ void RequestParseTask::operator()() {
         LOG4CXX_ERROR(_logger, "Json did not yield tasks");
       }
 
-      for (const auto & func: tasks) {
+      for (const auto& func : tasks) {
         if (auto task = std::dynamic_pointer_cast<PlanOperation>(func)) {
           task->setPriority(priority);
           task->setSessionId(sessionId);
@@ -180,13 +173,12 @@ void RequestParseTask::operator()() {
         }
       }
     } else {
-      LOG4CXX_ERROR(_logger, "Failed to parse: "
-                    << urldecode(body_data["query"]) << "\n"
-                    << body_data["query"] << "\n"
-                    << reader.getFormatedErrorMessages());
+      LOG4CXX_ERROR(_logger,
+                    "Failed to parse: " << urldecode(body_data["query"]) << "\n" << body_data["query"] << "\n"
+                                        << reader.getFormatedErrorMessages());
 
       // Forward parsing error
-      _responseTask->addErrorMessage("Parsing: " + reader.getFormatedErrorMessages());      
+      _responseTask->addErrorMessage("Parsing: " + reader.getFormatedErrorMessages());
     }
     // Update the transmission limit for the response task
     if (atoi(body_data["limit"].c_str()) > 0)
@@ -201,19 +193,20 @@ void RequestParseTask::operator()() {
 
 
   // high priority tasks are expected to be scheduled sequentially
-  if(priority == Task::HIGH_PRIORITY){
+  if (priority == Task::HIGH_PRIORITY) {
     if (recordPerformance) {
-      *(performance_data.at(0)) = { 0, 0, "NO_PAPI", "RequestParseTask", 
-                                    "requestParse", _queryStart, get_epoch_nanoseconds(), 
-                                    boost::lexical_cast<std::string>(std::this_thread::get_id()) };
+      *(performance_data.at(0)) = {
+          0,                       0,                                                           "NO_PAPI",
+          "RequestParseTask",      "requestParse",                                              _queryStart,
+          get_epoch_nanoseconds(), boost::lexical_cast<std::string>(std::this_thread::get_id())};
     }
 
     int number_of_tasks = tasks.size();
     std::vector<bool> isExecuted(number_of_tasks, false);
     int executedTasks = 0;
-    while(executedTasks < number_of_tasks){
-      for(int i = 0; i < number_of_tasks; i++){
-        if(!isExecuted[i] && tasks[i]->isReady()){
+    while (executedTasks < number_of_tasks) {
+      for (int i = 0; i < number_of_tasks; i++) {
+        if (!isExecuted[i] && tasks[i]->isReady()) {
           (*tasks[i])();
           tasks[i]->notifyDoneObservers();
           executedTasks++;
@@ -230,22 +223,16 @@ void RequestParseTask::operator()() {
     scheduler->scheduleQuery(tasks);
 
     if (recordPerformance) {
-      *(performance_data.at(0)) = { 0, 0, "NO_PAPI", "RequestParseTask", "requestParse", 
-                                    _queryStart, get_epoch_nanoseconds(), 
-                                    boost::lexical_cast<std::string>(std::this_thread::get_id()) };
+      *(performance_data.at(0)) = {
+          0,                       0,                                                           "NO_PAPI",
+          "RequestParseTask",      "requestParse",                                              _queryStart,
+          get_epoch_nanoseconds(), boost::lexical_cast<std::string>(std::this_thread::get_id())};
     }
     _responseTask->setQueryStart(_queryStart);
     _responseTask.reset();  // yield responsibility
   }
 }
 
-void RequestParseTask::setScheduler(std::shared_ptr<hyrise::taskscheduler::AbstractTaskScheduler> scheduler){
-  _scheduler = scheduler;
-}
-
-std::shared_ptr<ResponseTask> RequestParseTask::getResponseTask() const {
-  return _responseTask;
-}
-
+std::shared_ptr<ResponseTask> RequestParseTask::getResponseTask() const { return _responseTask; }
 }
 }

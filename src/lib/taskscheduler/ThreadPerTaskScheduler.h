@@ -22,33 +22,34 @@ namespace taskscheduler {
 // our worker thread objects
 class TaskExecutor {
   std::shared_ptr<Task> _task;
-public:
-  TaskExecutor(std::shared_ptr<Task> task) : _task(task) { }
-  void operator()(){
+
+ public:
+  TaskExecutor(std::shared_ptr<Task> task) : _task(task) {}
+  void operator()() {
     (*_task)();
     _task->notifyDoneObservers();
   };
 };
 /*
-* A scheduler that starts a new thread for each arriving task 
-*/ 
-class ThreadPerTaskScheduler : 
-  public AbstractTaskScheduler,
-  public TaskReadyObserver {
+* A scheduler that starts a new thread for each arriving task
+*/
+class ThreadPerTaskScheduler : public AbstractTaskScheduler,
+                               public TaskReadyObserver {
   typedef std::unordered_set<std::shared_ptr<Task> > waiting_tasks_t;
-    // scheduler status
-    scheduler_status_t _status;
-    // mutex to protect status
-    lock_t _statusMutex;
-    static log4cxx::LoggerPtr _logger;
-public:
+  // scheduler status
+  scheduler_status_t _status;
+  // mutex to protect status
+  lock_t _statusMutex;
+  static log4cxx::LoggerPtr _logger;
+
+ public:
   ThreadPerTaskScheduler();
   ThreadPerTaskScheduler(int i);
   virtual ~ThreadPerTaskScheduler();
   /*
    * schedule a task for execution
    */
-  virtual void schedule(std::shared_ptr<Task> task);
+  virtual void schedule(const std::shared_ptr<Task>& task);
   /*
    * shutdown task scheduler; makes sure all underlying threads are stopped
    */
@@ -59,11 +60,10 @@ public:
    * get number of worker
    */
   virtual size_t getNumberOfWorker() const {
-      return 0;
+    return 0;
   };
 
-  void notifyReady(std::shared_ptr<Task> task);
+  void notifyReady(const std::shared_ptr<Task>& task);
 };
-
-} } // namespace hyrise::taskscheduler
-
+}
+}  // namespace hyrise::taskscheduler

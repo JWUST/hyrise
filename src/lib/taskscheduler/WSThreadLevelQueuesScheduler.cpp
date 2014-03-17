@@ -7,10 +7,10 @@ namespace hyrise {
 namespace taskscheduler {
 
 namespace {
-	bool registered1  =
+bool registered1 =
     SharedScheduler::registerScheduler<WSThreadLevelPriorityQueuesScheduler>("WSThreadLevelPriorityQueuesScheduler");
-    bool registered2  =
+bool registered2 =
     SharedScheduler::registerScheduler<WSThreadLevelBasicQueuesScheduler>("WSThreadLevelQueuesScheduler");
 }
-
-}}
+}
+}

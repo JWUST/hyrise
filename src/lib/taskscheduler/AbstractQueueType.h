@@ -19,11 +19,12 @@ namespace taskscheduler {
 */
 
 class AbstractQueueType {
-public:
-	virtual void push(const std::shared_ptr<Task> & task) = 0;
-	virtual bool try_pop(std::shared_ptr<Task> & task) = 0;
-	virtual size_t unsafe_size() = 0;
-	//currently not used
-	virtual size_t size() = 0;
+ public:
+  virtual void push(const std::shared_ptr<Task>& task) = 0;
+  virtual bool try_pop(std::shared_ptr<Task>& task) = 0;
+  virtual size_t unsafe_size() = 0;
+  // currently not used
+  virtual size_t size() = 0;
 };
-}}
+}
+}

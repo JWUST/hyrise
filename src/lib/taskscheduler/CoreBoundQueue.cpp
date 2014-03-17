@@ -2,7 +2,5 @@
 #include "SharedScheduler.h"
 
 namespace hyrise {
-namespace taskscheduler {
-
-
-}}
+namespace taskscheduler {}
+}

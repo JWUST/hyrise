@@ -7,9 +7,9 @@ namespace hyrise {
 namespace taskscheduler {
 
 namespace {
-	bool registered1  =
+bool registered1 =
     SharedScheduler::registerScheduler<WSCoreBoundPriorityQueuesScheduler>("WSCoreBoundPriorityQueuesScheduler");
-    bool registered2  =
-    SharedScheduler::registerScheduler<WSCoreBoundBasicQueuesScheduler>("WSCoreBoundQueuesScheduler");
+bool registered2 = SharedScheduler::registerScheduler<WSCoreBoundBasicQueuesScheduler>("WSCoreBoundQueuesScheduler");
 }
-}}
+}
+}

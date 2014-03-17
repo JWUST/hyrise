@@ -19,4 +19,3 @@ unsigned getNumberOfNodes(hwloc_topology_t topology);
 unsigned getNumberOfCoresPerNumaNode();
 unsigned getNumberOfCoresPerNodeOnSystem();
 unsigned getNumberOfNodesOnSystem();
-

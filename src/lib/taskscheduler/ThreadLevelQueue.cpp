@@ -7,12 +7,9 @@ namespace hyrise {
 namespace taskscheduler {
 
 namespace {
-	bool registered1  =
-    SharedScheduler::registerScheduler<ThreadLevelPriorityQueue>("CentralPriorityScheduler");
-    bool registered2  =
-    SharedScheduler::registerScheduler<ThreadLevelBasicQueue>("CentralScheduler");
-    bool registered3  =
-    SharedScheduler::registerScheduler<TBBThreadLevelQueue>("TBBCentralScheduler");
+bool registered1 = SharedScheduler::registerScheduler<ThreadLevelPriorityQueue>("CentralPriorityScheduler");
+bool registered2 = SharedScheduler::registerScheduler<ThreadLevelBasicQueue>("CentralScheduler");
+bool registered3 = SharedScheduler::registerScheduler<TBBThreadLevelQueue>("TBBCentralScheduler");
 }
-
-}}
+}
+}

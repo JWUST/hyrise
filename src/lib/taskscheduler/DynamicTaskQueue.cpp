@@ -7,10 +7,8 @@ namespace hyrise {
 namespace taskscheduler {
 
 namespace {
-	bool registered1  =
-    SharedScheduler::registerScheduler<DynamicTaskPriorityQueue>("DynamicPriorityScheduler");
-    bool registered2  =
-    SharedScheduler::registerScheduler<DynamicTaskBasicQueue>("DynamicScheduler");
+bool registered1 = SharedScheduler::registerScheduler<DynamicTaskPriorityQueue>("DynamicPriorityScheduler");
+bool registered2 = SharedScheduler::registerScheduler<DynamicTaskBasicQueue>("DynamicScheduler");
 }
-
-}}
+}
+}

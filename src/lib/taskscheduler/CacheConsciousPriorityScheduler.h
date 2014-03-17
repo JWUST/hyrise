@@ -104,7 +104,7 @@ public:
 
   }
   
-  void notifyDone(std::shared_ptr<Task> task) {
+  void notifyDone(const std::shared_ptr<Task>& task) {
     // execute the next waiting task
     LOG4CXX_INFO(_logger, "NotifyDone " << task->vname());
     if(ThreadLevelQueuesScheduler<QUEUE>::_status == AbstractTaskScheduler::RUN)
