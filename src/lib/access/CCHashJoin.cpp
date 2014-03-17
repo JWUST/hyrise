@@ -56,6 +56,7 @@ void CCHashJoin::executePlanOperation() {
 
   // probe
   hashmap_t hashmap;
+  hashmap.reserve(10000);
   size_t small_table_size = small_tbl->size();
   for (size_t i = 0; i < small_table_size; i++) {
     hyrise_int_t val = small_tbl->getValue<hyrise_int_t>(0, i);
@@ -66,7 +67,7 @@ void CCHashJoin::executePlanOperation() {
   // join
   storage::pos_list_t *leftResults = new pos_list_t;
   storage::pos_list_t *rightResults = new pos_list_t;
-
+  
   size_t large_table_size = large_tbl->size();
   for (size_t i = 0; i < large_table_size; i++) {
     hyrise_int_t val = large_tbl->getValue<hyrise_int_t>(0, i);
