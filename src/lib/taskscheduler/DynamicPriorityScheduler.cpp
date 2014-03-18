@@ -14,7 +14,7 @@ namespace {
 DynamicPriorityScheduler::DynamicPriorityScheduler(int threads):CentralPriorityScheduler(threads){}
 
 void DynamicPriorityScheduler::schedule(std::shared_ptr<Task> task){
-  if (task->isDynamic() && task->isReady()) {
+  if (task->isDynamic() && _maxTaskSize > 0 && task->isReady()) {
     uint dynamicCount = task->determineDynamicCount(_maxTaskSize);
     auto tasks = task->applyDynamicParallelization(dynamicCount);
     for (const auto& i : tasks) {
@@ -34,7 +34,7 @@ void DynamicPriorityScheduler::notifyReady(std::shared_ptr<Task> task){
   // if task was found in wait set, schedule task to next queue
   if (tmp == 1) {
     LOG4CXX_DEBUG(_logger, "Task " << std::hex << (void *)task.get() << std::dec << " ready to run");
-    if (task->isDynamic()) {
+    if (task->isDynamic() && _maxTaskSize > 0) {
       auto dynamicCount = task->determineDynamicCount(_maxTaskSize);
       auto tasks = task->applyDynamicParallelization(dynamicCount);
       for (const auto& i : tasks) {
