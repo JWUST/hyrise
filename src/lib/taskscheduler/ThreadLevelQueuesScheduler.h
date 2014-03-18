@@ -85,8 +85,8 @@ class ThreadLevelQueuesScheduler : public AbstractTaskScheduler,
    * shutdown task scheduler; makes sure all underlying threads are stopped
    */
   virtual void shutdown() {
-    _status = TO_STOP;
     if (_status != STOPPED) {
+      _status = TO_STOP;  
       for (size_t i = 0; i < _queueCount; i++)
         _queues[i]->shutdown();
       _status = STOPPED;

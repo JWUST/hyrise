@@ -42,7 +42,7 @@ public:
     return std::make_shared<CacheConsciousPriorityQueue<QUEUE>>(node, threads);
   }
   
-  void schedule(std::shared_ptr<Task> task) {
+  void schedule(const std::shared_ptr<Task> &  task) {
     LOG4CXX_INFO(_logger, "Task " << task->vname() << " scheduled");
     task->lockForNotifications();
     if (!task->isReady()) {
@@ -111,7 +111,7 @@ public:
       tryExecuteFirstTaskInQueue();
   }
   
-  void notifyReady(std::shared_ptr<Task> task) {
+  void notifyReady(const std::shared_ptr<Task>& task) {
     LOG4CXX_INFO(_logger, "notifyReady" << task->vname());
     if(ThreadLevelQueuesScheduler<QUEUE>::_status == AbstractTaskScheduler::RUN)
       schedule(task);

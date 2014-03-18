@@ -53,13 +53,12 @@ void CCHashJoin::executePlanOperation() {
   // auto large_tbl = getInputTable(0)->size() > getInputTable(1)->size() ? getInputTable(0) : getInputTable(1);
   auto small_tbl = getInputTable(0);
   auto large_tbl = getInputTable(1);
-
   // probe
   hashmap_t hashmap;
   hashmap.reserve(10000);
   size_t small_table_size = small_tbl->size();
   for (size_t i = 0; i < small_table_size; i++) {
-    hyrise_int_t val = small_tbl->getValue<hyrise_int_t>(0, i);
+    hyrise_int_t val = small_tbl->getValue<hyrise_int_t>(_indexed_field_definition[0], i);
     hashmap.insert(hashmap_t::value_type(val, i));
     //printf("%ld\n", val);
   }
@@ -70,7 +69,7 @@ void CCHashJoin::executePlanOperation() {
   
   size_t large_table_size = large_tbl->size();
   for (size_t i = 0; i < large_table_size; i++) {
-    hyrise_int_t val = large_tbl->getValue<hyrise_int_t>(0, i);
+    hyrise_int_t val = large_tbl->getValue<hyrise_int_t>(_indexed_field_definition[1], i);
     const auto range = hashmap.equal_range(val);
     for (auto it = range.first; it != range.second; it++) {
       leftResults->push_back(it->second);
@@ -89,7 +88,7 @@ void CCHashJoin::executePlanOperation() {
 }
 
 std::shared_ptr<PlanOperation> CCHashJoin::parse(const Json::Value &data) {
-  return std::make_shared<CCHashJoin>();
+  return BasicParser<CCHashJoin>::parse(data); //std::make_shared<CCHashJoin>();
 }
 
 size_t CCHashJoin::getFootprint() {
