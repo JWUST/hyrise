@@ -22,8 +22,9 @@ log4cxx::LoggerPtr AbstractCoreBoundQueue::logger(log4cxx::Logger::getLogger("ta
 
 AbstractCoreBoundQueue::AbstractCoreBoundQueue(): _status(RUN){
   // TODO Auto-generated constructor stub
-
 }
+
+AbstractCoreBoundQueue::AbstractCoreBoundQueue(int core): _status(RUN), _core(core){}
 
 AbstractCoreBoundQueue::~AbstractCoreBoundQueue() {
   // TODO Auto-generated destructor stub
@@ -42,7 +43,7 @@ void AbstractCoreBoundQueue::launchThread(int core) {
   // NEver ever run antything on core 0, this is where the system runs
   // and we can only get worse from there thatswhy we use numprocs-1 as the suitable number
   
-  const size_t freeCores = std::min(NUM_PROCS - 1, 2);
+  const size_t freeCores = std::min(NUM_PROCS - 1, 1);
   core = (core % (NUM_PROCS - freeCores)) + freeCores;
 
   if (core < NUM_PROCS) {

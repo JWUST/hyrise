@@ -333,12 +333,12 @@ public:
    * @param valueId ID of the value to be returned.
    */
   template <typename T>
-  inline T getValueForValueId(const field_t column, const ValueId valueId) const {
+  inline T getValueForValueId(const field_t column, const ValueId valueId, const size_t row=0) const {
     typedef BaseDictionary<T> dict_t;
     if (valueId.table != 0) {
       return (static_cast<dict_t *>(dictionaryByTableId(column, valueId.table).get()))->getValueForValueId(valueId.valueId);
     } else {
-      return (static_cast<dict_t *>(dictionaryAt(column, 0, valueId.table).get()))->getValueForValueId(valueId.valueId);
+      return (static_cast<dict_t *>(dictionaryAt(column, row).get()))->getValueForValueId(valueId.valueId);
     }
   }
 
@@ -351,13 +351,8 @@ public:
    */
   template <typename T>
   T getValue(const field_t column, const size_t row) const {
-    typedef BaseDictionary<T> dict_t;
     ValueId valueId = getValueId(column, row);
-    if (valueId.table != 0) {
-        return (static_cast<dict_t *>(dictionaryByTableId(column, valueId.table).get()))->getValueForValueId(valueId.valueId);
-    } else {
-        return (static_cast<dict_t *>(dictionaryAt(column, row, valueId.table).get()))->getValueForValueId(valueId.valueId);
-    }
+    return getValueForValueId<T>(column, valueId, row);
   }
 
 
@@ -409,19 +404,6 @@ public:
    * @param dst_row Row of the target cell.
    */
   void copyValueFrom(const c_atable_ptr_t& source, size_t src_col, size_t src_row, size_t dst_col, size_t dst_row);
-
-
-  /**
-   * Copies a value from another table by column and value-ID.
-   *
-   * @param source  Table from which to copy the value.
-   * @param src_col Column of the source cell.
-   * @param vid     Value-ID in the source Column.
-   * @param dst_col Column of the target cell.
-   * @param dst_row Row of the target cell.
-   */
-  void copyValueFrom(const c_atable_ptr_t& source, size_t src_col, ValueId vid, size_t dst_col, size_t dst_row);
-
 
   /**
    * Copies a row from another table with or without values.
