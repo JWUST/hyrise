@@ -11,6 +11,7 @@
 namespace hyrise {
 namespace access {
 
+
 // Extracts the AV from the table at given column
 template <typename Table, typename VectorType = storage::FixedLengthVector<value_id_t>>
 inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table& tab, const size_t column = 0) {
@@ -22,6 +23,22 @@ inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table
 
 template <typename VectorType = storage::FixedLengthVector<value_id_t>>
 inline std::pair<std::shared_ptr<VectorType>, size_t> getDataVector(const storage::c_atable_ptr_t& tab,
+                                                                    const size_t column = 0) {
+  return _getDataVector<decltype(tab), VectorType>(tab, column);
+}
+
+
+// Extracts the AV from the table at given column
+template <typename Table, typename VectorType = storage::FixedLengthVector<value_id_t>>
+inline std::pair<std::shared_ptr<VectorType>, size_t> _getDeltaDataVector(const Table& tab, const size_t column = 0) {
+  const auto& avs = tab->getAttributeVectors(column);
+  const auto data = std::dynamic_pointer_cast<VectorType>(avs.at(1).attribute_vector);
+  assert(data != nullptr);
+  return {data, avs.at(0).attribute_offset};
+}
+
+template <typename VectorType = storage::FixedLengthVector<value_id_t>>
+inline std::pair<std::shared_ptr<VectorType>, size_t> getDeltaDataVector(const storage::c_atable_ptr_t& tab,
                                                                     const size_t column = 0) {
   return _getDataVector<decltype(tab), VectorType>(tab, column);
 }
@@ -83,15 +100,31 @@ void Histogram::executeHistogram() {
   // check if tab is PointerCalculator; if yes, get underlying table and actual rows and columns
   auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(tab);
   if (p) {
-    auto ipair = getDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
-    const auto& ivec = ipair.first;
-    const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(
-        tab->dictionaryAt(p->getTableColumnForColumn(field)));
-    const auto& offset = ipair.second;
 
+    //auto ipair = getDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
+    //const auto& ivec = ipair.first;
+    //const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(
+    //    tab->dictionaryAt(p->getTableColumnForColumn(field)));
+    //const auto& offset = ipair.second;
+
+    auto ipair_main = getDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
+    auto ipair_delta = getDeltaDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
+
+    const auto& ivec_main = ipair_main.first;
+    const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
+    const auto& offset_main = ipair_main.second;
+
+    const auto& ivec_delta = ipair_delta.first;
+    const auto& offset_delta = ipair_delta.second;
+
+    size_t main_size = ivec_main->size();
     auto hasher = std::hash<T>();
+    size_t hash_value;
     for (size_t row = start; row < stop; ++row) {
-      auto hash_value = hasher(dict->getValueForValueId(ivec->get(offset, p->getTableRowForRow(row))));
+      if(row < main_size)
+        hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));
+      else
+        hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row)-main_size)));
       pair.first->inc(0, (hash_value & mask) >> significantOffset());
     }
   } else {
@@ -102,17 +135,28 @@ void Histogram::executeHistogram() {
       auto pc = mvt->containerAt(field);
       auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
       if (p) {
-        auto ipair = getDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
-        const auto& ivec = ipair.first;
-        const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(
-            tab->dictionaryAt(p->getTableColumnForColumn(field)));
-        const auto& offset = ipair.second;
+        
+        auto ipair_main = getDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
+        auto ipair_delta = getDeltaDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
 
+        const auto& ivec_main = ipair_main.first;
+        const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
+        const auto& offset_main = ipair_main.second;
+
+        const auto& ivec_delta = ipair_delta.first;
+        const auto& offset_delta = ipair_delta.second;
+
+        size_t main_size = ivec_main->size();
         auto hasher = std::hash<T>();
+        size_t hash_value;
         for (size_t row = start; row < stop; ++row) {
-          auto hash_value = hasher(dict->getValueForValueId(ivec->get(offset, p->getTableRowForRow(row))));
+          if(row < main_size)
+            hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));
+          else
+            hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row)-main_size)));
           pair.first->inc(0, (hash_value & mask) >> significantOffset());
         }
+
       } else {
         throw std::runtime_error(
             "Histogram only supports MutableVerticalTable of PointerCalculators; found other AbstractTable than "
@@ -120,14 +164,24 @@ void Histogram::executeHistogram() {
       }
     } else {
       // else; we expect a raw table
-      auto ipair = getDataVector(tab, field);
-      const auto& ivec = ipair.first;
-      const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
-      const auto& offset = ipair.second;
+      auto ipair_main = getDataVector(tab, field);
+      auto ipair_delta = getDeltaDataVector(tab, field);
 
+      const auto& ivec_main = ipair_main.first;
+      const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
+      const auto& offset_main = ipair_main.second;
+
+      const auto& ivec_delta = ipair_delta.first;
+      const auto& offset_delta = ipair_delta.second;
+
+      size_t main_size = ivec_main->size();
       auto hasher = std::hash<T>();
+      size_t hash_value;
       for (size_t row = start; row < stop; ++row) {
-        auto hash_value = hasher(dict->getValueForValueId(ivec->get(offset, row)));
+        if(row < main_size)
+          hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, row)));
+        else
+          hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, row-main_size)));
         pair.first->inc(0, (hash_value & mask) >> significantOffset());
       }
     }

@@ -77,17 +77,25 @@ void RadixCluster::executeClustering() {
   // check if tab is PointerCalculator; if yes, get underlying table and actual rows and columns
   auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(tab);
   if (p) {
-    auto ipair = getDataVector(p->getActualTable());
-    const auto& ivec = ipair.first;
+    auto ipair_main = getDataVector(p->getActualTable());
+    auto ipair_delta = getDeltaDataVector(p->getActualTable());
 
-    const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(
-        tab->dictionaryAt(p->getTableColumnForColumn(field)));
-    const auto& offset = p->getTableColumnForColumn(field) + ipair.second;
+    const auto& ivec_main = ipair_main.first;
+    const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
+    const auto& offset_main = p->getTableColumnForColumn(field) + ipair_main.second;
 
-    auto hasher = std::hash<T>();
+    const auto& ivec_delta = ipair_delta.first;
+    const auto& offset_delta = p->getTableColumnForColumn(field) + ipair_delta.second;
+
+    size_t main_size = ivec_main->size();
+    std::hash<T> hasher;
+    size_t hash_value;    
     for (decltype(tableSize) row = _start; row < _stop; ++row) {
       // Calculate and increment the position
-      auto hash_value = hasher(dict->getValueForValueId(ivec->get(offset, p->getTableRowForRow(row))));  // ts(tpe,
+      if(row < main_size)
+        hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));  // ts(tpe,
+      else
+        hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row))));  // ts(tpe,
       // fun);
       auto offset = (hash_value & mask) >> _significantOffset;
       auto pos_to_write = data_prefix_sum->inc(0, offset);
@@ -96,6 +104,7 @@ void RadixCluster::executeClustering() {
       data_hash->set(0, pos_to_write, hash_value);
       data_pos->set(0, pos_to_write, p->getTableRowForRow(row));
     }
+
   } else {
 
     // output of radix join is MutableVerticalTable of PointerCalculators
@@ -105,25 +114,34 @@ void RadixCluster::executeClustering() {
       auto pc = mvt->containerAt(field);
       auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
       if (p) {
-        auto ipair = getDataVector(p->getActualTable());
-        const auto& ivec = ipair.first;
-
-        const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(
-            tab->dictionaryAt(p->getTableColumnForColumn(field)));
-        const auto& offset = p->getTableColumnForColumn(field) + ipair.second;
-
-        auto hasher = std::hash<T>();
+        auto ipair_main = getDataVector(p->getActualTable());
+        auto ipair_delta = getDeltaDataVector(p->getActualTable());
+    
+        const auto& ivec_main = ipair_main.first;
+        const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
+        const auto& offset_main = p->getTableColumnForColumn(field) + ipair_main.second;
+    
+        const auto& ivec_delta = ipair_delta.first;
+        const auto& offset_delta = p->getTableColumnForColumn(field) + ipair_delta.second;
+    
+        size_t main_size = ivec_main->size();
+        std::hash<T> hasher;
+        size_t hash_value;    
         for (decltype(tableSize) row = _start; row < _stop; ++row) {
           // Calculate and increment the position
-          auto hash_value =
-              hasher(dict->getValueForValueId(ivec->get(offset, p->getTableRowForRow(row))));  // ts(tpe, fun);
+          if(row < main_size)
+            hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));  // ts(tpe,
+          else
+            hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row))));  // ts(tpe,
+          // fun);
           auto offset = (hash_value & mask) >> _significantOffset;
           auto pos_to_write = data_prefix_sum->inc(0, offset);
-
+    
           // Perform the clustering
           data_hash->set(0, pos_to_write, hash_value);
           data_pos->set(0, pos_to_write, p->getTableRowForRow(row));
         }
+
 
       } else {
         throw std::runtime_error(
@@ -131,15 +149,26 @@ void RadixCluster::executeClustering() {
             "PointerCalculator inside od MutableVerticalTable.");
       }
     } else {
-      auto ipair = getDataVector(tab);
-      const auto& ivec = ipair.first;
-      const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
-      const auto& offset = field + ipair.second;
+      auto ipair_main = getDataVector(tab);
+      auto ipair_delta = getDeltaDataVector(tab);
 
+      const auto& ivec_main = ipair_main.first;
+      const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
+      const auto& offset_main = field + ipair_main.second;
+
+      const auto& ivec_delta = ipair_delta.first;
+      const auto& offset_delta = field + ipair_delta.second;
+
+      size_t main_size = ivec_main->size();
       std::hash<T> hasher;
-      for (decltype(tableSize) row = _start; row < _stop; ++row) {
+      size_t hash_value;
+      //iterate over main
+      for (decltype(tableSize) row = _start; row < main_size; ++row) {
         // Calculate and increment the position
-        auto hash_value = hasher(dict->getValueForValueId(ivec->get(offset, row)));  // ts(tpe, fun);
+        if(row < main_size)
+          hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, row)));  // ts(tpe, fun);
+        else
+          hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, row - main_size)));
         auto offset = (hash_value & mask) >> _significantOffset;
         auto pos_to_write = data_prefix_sum->inc(0, offset);
 
