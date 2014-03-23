@@ -5,6 +5,7 @@
 #include "access/system/ParallelizablePlanOperation.h"
 
 #include "storage/FixedLengthVector.h"
+#include "storage/BaseAttributeVector.h"
 #include "storage/OrderPreservingDictionary.h"
 #include "storage/PointerCalculator.h"
 
@@ -13,34 +14,25 @@ namespace access {
 
 
 // Extracts the AV from the table at given column
-template <typename Table, typename VectorType = storage::FixedLengthVector<value_id_t>>
-inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table& tab, const size_t column = 0) {
+template <typename VectorType, typename Table>
+inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table& tab, const size_t column = 0, const bool delta = false) {
   const auto& avs = tab->getAttributeVectors(column);
-  const auto data = std::dynamic_pointer_cast<VectorType>(avs.at(0).attribute_vector);
+  auto index = delta ? 1 : 0;
+  const auto data = std::dynamic_pointer_cast<VectorType>(avs.at(index).attribute_vector);
   assert(data != nullptr);
-  return {data, avs.at(0).attribute_offset};
+  return {data, avs.at(index).attribute_offset};
 }
 
+template <typename VectorType = storage::BaseAttributeVector<value_id_t>>
+inline std::pair<std::shared_ptr<VectorType>, size_t> getBaseDataVector(
+    const storage::c_atable_ptr_t& tab, const size_t column = 0, const bool delta = false) {
+  return _getDataVector<VectorType>(tab, column, delta);
+}
+  
 template <typename VectorType = storage::FixedLengthVector<value_id_t>>
-inline std::pair<std::shared_ptr<VectorType>, size_t> getDataVector(const storage::c_atable_ptr_t& tab,
-                                                                    const size_t column = 0) {
-  return _getDataVector<decltype(tab), VectorType>(tab, column);
-}
-
-
-// Extracts the AV from the table at given column
-template <typename Table, typename VectorType = storage::FixedLengthVector<value_id_t>>
-inline std::pair<std::shared_ptr<VectorType>, size_t> _getDeltaDataVector(const Table& tab, const size_t column = 0) {
-  const auto& avs = tab->getAttributeVectors(column);
-  const auto data = std::dynamic_pointer_cast<VectorType>(avs.at(1).attribute_vector);
-  assert(data != nullptr);
-  return {data, avs.at(0).attribute_offset};
-}
-
-template <typename VectorType = storage::FixedLengthVector<value_id_t>>
-inline std::pair<std::shared_ptr<VectorType>, size_t> getDeltaDataVector(const storage::c_atable_ptr_t& tab,
-                                                                    const size_t column = 0) {
-  return _getDataVector<decltype(tab), VectorType>(tab, column);
+inline std::pair<std::shared_ptr<VectorType>, size_t> getFixedDataVector(
+   const storage::c_atable_ptr_t& tab, const size_t column = 0) {
+  return _getDataVector<VectorType>(tab, column, false); 
 }
 
 /// This is a Histogram Plan Operation that calculates the number
@@ -88,7 +80,7 @@ void Histogram::executeHistogram() {
 
   // Prepare Output Table
   auto result = createOutputTable(1 << bits());
-  auto pair = getDataVector(result);
+  auto pair = getFixedDataVector(result);
 
   // Iterate and hash based on the part description
   size_t start = 0, stop = tableSize;
@@ -101,14 +93,8 @@ void Histogram::executeHistogram() {
   auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(tab);
   if (p) {
 
-    //auto ipair = getDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
-    //const auto& ivec = ipair.first;
-    //const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(
-    //    tab->dictionaryAt(p->getTableColumnForColumn(field)));
-    //const auto& offset = ipair.second;
-
-    auto ipair_main = getDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
-    auto ipair_delta = getDeltaDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
+    auto ipair_main = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), false);
+    auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
 
     const auto& ivec_main = ipair_main.first;
     const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
@@ -136,8 +122,8 @@ void Histogram::executeHistogram() {
       auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
       if (p) {
         
-        auto ipair_main = getDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
-        auto ipair_delta = getDeltaDataVector(p->getActualTable(), p->getTableColumnForColumn(field));
+        auto ipair_main = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), false);
+        auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
 
         const auto& ivec_main = ipair_main.first;
         const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
@@ -164,8 +150,8 @@ void Histogram::executeHistogram() {
       }
     } else {
       // else; we expect a raw table
-      auto ipair_main = getDataVector(tab, field);
-      auto ipair_delta = getDeltaDataVector(tab, field);
+      auto ipair_main = getBaseDataVector(tab, field, false);
+      auto ipair_delta = getBaseDataVector(tab, field, true);
 
       const auto& ivec_main = ipair_main.first;
       const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));

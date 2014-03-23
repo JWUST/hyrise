@@ -57,14 +57,14 @@ void RadixCluster::executeClustering() {
   // Get the prefix sum from the input
   const auto& prefix_sum = getInputTable(2);
   const auto& data_prefix_sum =
-      std::dynamic_pointer_cast<storage::FixedLengthVector<value_id_t>>(getDataVector(prefix_sum).first->copy());
+      std::dynamic_pointer_cast<storage::FixedLengthVector<value_id_t>>(getFixedDataVector(prefix_sum).first->copy());
 
   // Prepare mask
   auto mask = ((1 << bits()) - 1) << significantOffset();
 
   // Cast the vectors to the lowest part in the hierarchy
-  const auto& data_hash = getDataVector(result).first;
-  const auto& data_pos = getDataVector(result, 1).first;
+  const auto& data_hash = getFixedDataVector(result).first;
+  const auto& data_pos = getFixedDataVector(result, 1).first;
 
   // Calculate start stop
   _start = 0;
@@ -77,15 +77,15 @@ void RadixCluster::executeClustering() {
   // check if tab is PointerCalculator; if yes, get underlying table and actual rows and columns
   auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(tab);
   if (p) {
-    auto ipair_main = getDataVector(p->getActualTable());
-    auto ipair_delta = getDeltaDataVector(p->getActualTable());
+    auto ipair_main = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), false);
+    auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
 
     const auto& ivec_main = ipair_main.first;
     const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
-    const auto& offset_main = p->getTableColumnForColumn(field) + ipair_main.second;
+    const auto& offset_main = ipair_main.second;
 
     const auto& ivec_delta = ipair_delta.first;
-    const auto& offset_delta = p->getTableColumnForColumn(field) + ipair_delta.second;
+    const auto& offset_delta = ipair_delta.second;
 
     size_t main_size = ivec_main->size();
     std::hash<T> hasher;
@@ -114,15 +114,15 @@ void RadixCluster::executeClustering() {
       auto pc = mvt->containerAt(field);
       auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
       if (p) {
-        auto ipair_main = getDataVector(p->getActualTable());
-        auto ipair_delta = getDeltaDataVector(p->getActualTable());
+        auto ipair_main = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), false);
+        auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
     
         const auto& ivec_main = ipair_main.first;
         const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
-        const auto& offset_main = p->getTableColumnForColumn(field) + ipair_main.second;
+        const auto& offset_main = ipair_main.second;
     
         const auto& ivec_delta = ipair_delta.first;
-        const auto& offset_delta = p->getTableColumnForColumn(field) + ipair_delta.second;
+        const auto& offset_delta = ipair_delta.second;
     
         size_t main_size = ivec_main->size();
         std::hash<T> hasher;
@@ -149,15 +149,15 @@ void RadixCluster::executeClustering() {
             "PointerCalculator inside od MutableVerticalTable.");
       }
     } else {
-      auto ipair_main = getDataVector(tab);
-      auto ipair_delta = getDeltaDataVector(tab);
+      auto ipair_main = getBaseDataVector(tab, field, false);
+      auto ipair_delta = getBaseDataVector(tab, field, true);
 
       const auto& ivec_main = ipair_main.first;
       const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
-      const auto& offset_main = field + ipair_main.second;
+      const auto& offset_main = ipair_main.second;
 
       const auto& ivec_delta = ipair_delta.first;
-      const auto& offset_delta = field + ipair_delta.second;
+      const auto& offset_delta = ipair_delta.second;
 
       size_t main_size = ivec_main->size();
       std::hash<T> hasher;
