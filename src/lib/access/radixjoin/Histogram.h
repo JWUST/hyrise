@@ -7,6 +7,7 @@
 #include "storage/FixedLengthVector.h"
 #include "storage/BaseAttributeVector.h"
 #include "storage/OrderPreservingDictionary.h"
+#include "storage/BaseDictionary.h"
 #include "storage/PointerCalculator.h"
 
 namespace hyrise {
@@ -97,24 +98,25 @@ void Histogram::executeHistogram() {
     auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
 
     const auto& ivec_main = ipair_main.first;
-    const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
+    const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
     const auto& offset_main = ipair_main.second;
 
+    size_t main_size = ivec_main->size();
+
     const auto& ivec_delta = ipair_delta.first;
+    const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), main_size+1));
     const auto& offset_delta = ipair_delta.second;
 
-    size_t main_size = ivec_main->size();
     auto hasher = std::hash<T>();
     size_t hash_value;
     for (size_t row = start; row < stop; ++row) {
       if(row < main_size)
-        hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));
+        hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));
       else
-        hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row)-main_size)));
+        hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row)-main_size)));
       pair.first->inc(0, (hash_value & mask) >> significantOffset());
     }
   } else {
-
     // output of radix join is MutableVerticalTable of PointerCalculators
     auto mvt = std::dynamic_pointer_cast<const storage::MutableVerticalTable>(tab);
     if (mvt) {
@@ -126,20 +128,22 @@ void Histogram::executeHistogram() {
         auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
 
         const auto& ivec_main = ipair_main.first;
-        const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
+        const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
         const auto& offset_main = ipair_main.second;
 
+        size_t main_size = ivec_main->size();
+
         const auto& ivec_delta = ipair_delta.first;
+        const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), main_size+1));
         const auto& offset_delta = ipair_delta.second;
 
-        size_t main_size = ivec_main->size();
         auto hasher = std::hash<T>();
         size_t hash_value;
         for (size_t row = start; row < stop; ++row) {
           if(row < main_size)
-            hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));
+            hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));
           else
-            hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row)-main_size)));
+            hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row)-main_size)));
           pair.first->inc(0, (hash_value & mask) >> significantOffset());
         }
 
@@ -154,20 +158,22 @@ void Histogram::executeHistogram() {
       auto ipair_delta = getBaseDataVector(tab, field, true);
 
       const auto& ivec_main = ipair_main.first;
-      const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
+      const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
       const auto& offset_main = ipair_main.second;
 
+      size_t main_size = ivec_main->size();
+
       const auto& ivec_delta = ipair_delta.first;
+      const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(field, main_size+1));
       const auto& offset_delta = ipair_delta.second;
 
-      size_t main_size = ivec_main->size();
       auto hasher = std::hash<T>();
       size_t hash_value;
       for (size_t row = start; row < stop; ++row) {
         if(row < main_size)
-          hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, row)));
+          hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, row)));
         else
-          hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, row-main_size)));
+          hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, row-main_size)));
         pair.first->inc(0, (hash_value & mask) >> significantOffset());
       }
     }

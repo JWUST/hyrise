@@ -81,21 +81,23 @@ void RadixCluster::executeClustering() {
     auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
 
     const auto& ivec_main = ipair_main.first;
-    const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
+    const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
     const auto& offset_main = ipair_main.second;
 
+    size_t main_size = ivec_main->size();
+
     const auto& ivec_delta = ipair_delta.first;
+    const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), main_size+1));
     const auto& offset_delta = ipair_delta.second;
 
-    size_t main_size = ivec_main->size();
     std::hash<T> hasher;
     size_t hash_value;    
     for (decltype(tableSize) row = _start; row < _stop; ++row) {
       // Calculate and increment the position
       if(row < main_size)
-        hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));  // ts(tpe,
+        hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));  // ts(tpe,
       else
-        hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row))));  // ts(tpe,
+        hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row))));  // ts(tpe,
       // fun);
       auto offset = (hash_value & mask) >> _significantOffset;
       auto pos_to_write = data_prefix_sum->inc(0, offset);
@@ -118,21 +120,23 @@ void RadixCluster::executeClustering() {
         auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
     
         const auto& ivec_main = ipair_main.first;
-        const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
+        const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
         const auto& offset_main = ipair_main.second;
     
+        size_t main_size = ivec_main->size();
+
         const auto& ivec_delta = ipair_delta.first;
+        const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), main_size+1));
         const auto& offset_delta = ipair_delta.second;
     
-        size_t main_size = ivec_main->size();
         std::hash<T> hasher;
         size_t hash_value;    
         for (decltype(tableSize) row = _start; row < _stop; ++row) {
           // Calculate and increment the position
           if(row < main_size)
-            hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));  // ts(tpe,
+            hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));  // ts(tpe,
           else
-            hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row))));  // ts(tpe,
+            hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row))));  // ts(tpe,
           // fun);
           auto offset = (hash_value & mask) >> _significantOffset;
           auto pos_to_write = data_prefix_sum->inc(0, offset);
@@ -153,22 +157,23 @@ void RadixCluster::executeClustering() {
       auto ipair_delta = getBaseDataVector(tab, field, true);
 
       const auto& ivec_main = ipair_main.first;
-      const auto& dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
+      const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
       const auto& offset_main = ipair_main.second;
 
+      size_t main_size = ivec_main->size();
+
       const auto& ivec_delta = ipair_delta.first;
+      const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(field, main_size+1));
       const auto& offset_delta = ipair_delta.second;
 
-      size_t main_size = ivec_main->size();
       std::hash<T> hasher;
       size_t hash_value;
-      //iterate over main
-      for (decltype(tableSize) row = _start; row < main_size; ++row) {
+      for (decltype(tableSize) row = _start; row < _stop; ++row) {
         // Calculate and increment the position
         if(row < main_size)
-          hash_value = hasher(dict->getValueForValueId(ivec_main->get(offset_main, row)));  // ts(tpe, fun);
+          hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, row)));  // ts(tpe, fun);
         else
-          hash_value = hasher(dict->getValueForValueId(ivec_delta->get(offset_delta, row - main_size)));
+          hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, row - main_size)));
         auto offset = (hash_value & mask) >> _significantOffset;
         auto pos_to_write = data_prefix_sum->inc(0, offset);
 
