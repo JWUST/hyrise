@@ -113,22 +113,22 @@ void RadixCluster::executeClustering() {
     // output of radix join is MutableVerticalTable of PointerCalculators
     auto mvt = std::dynamic_pointer_cast<const storage::MutableVerticalTable>(tab);
     if (mvt) {
-
       auto pc = mvt->containerAt(field);
+      auto fieldInContainer = mvt->getOffsetInContainer(field);
       auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
       if (p) {
-        auto ipair_main = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), false);
-        auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
+        auto ipair_main = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(fieldInContainer), false);
+        auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(fieldInContainer), true);
     
         const auto& ivec_main = ipair_main.first;
-        const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
+        const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(p->dictionaryAt(p->getTableColumnForColumn(fieldInContainer)));
         const auto& offset_main = ipair_main.second;
     
         size_t main_size = ivec_main->size();
 
         const auto& ivec_delta = ipair_delta.first;
         // Delta dict or if delta is empty, main dict which will not be used afterwards.
-        const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), tab->size()-1));
+        const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(p->dictionaryAt(p->getTableColumnForColumn(fieldInContainer), tab->size()-1));
         const auto& offset_delta = ipair_delta.second;
     
         std::hash<T> hasher;
