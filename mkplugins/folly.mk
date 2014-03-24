@@ -1,0 +1,2 @@
+LIBS += glog folly
+CPPFLAGS += -DHYRISE_USE_FOLLY

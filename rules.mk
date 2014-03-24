@@ -191,6 +191,10 @@ ifeq ($(WITH_PROFILER),1)
 PLUGINS += profiler
 endif
 
+ifeq ($(WITH_FOLLY),1)
+PLUGINS += folly
+endif
+
 
 ifeq ($(WITH_V8),1)
 ifndef V8_BASE_DIRECTORY
@@ -210,8 +214,8 @@ CPPFLAGS.release += -DEXPENSIVE_TESTS -DPRODUCTION -DNDEBUG
 CFLAGS.debug +=
 CFLAGS.release +=
 
-LDFLAGS.debug +=
-LDFLAGS.release +=
+LDFLAGS.debug += -lglog -lfolly
+LDFLAGS.release += -lglog -lfolly
 
 COMMON_FLAGS.debug += -O0
 COMMON_FLAGS.release += -O3 -march=native
