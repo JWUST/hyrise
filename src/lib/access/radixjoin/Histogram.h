@@ -13,6 +13,8 @@
 namespace hyrise {
 namespace access {
 
+//TODO unused delta_size throughout code
+//TODO unclean way of extracting the delta dictionary
 
 // Extracts the AV from the table at given column
 template <typename VectorType, typename Table>
