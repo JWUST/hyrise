@@ -87,7 +87,9 @@ void RadixCluster::executeClustering() {
     size_t main_size = ivec_main->size();
 
     const auto& ivec_delta = ipair_delta.first;
-    const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), main_size+1));
+    size_t delta_size = ivec_delta->size();
+    // Delta dict or if delta is empty, main dict which will not be used afterwards.
+    const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), p->size()-1));
     const auto& offset_delta = ipair_delta.second;
 
     std::hash<T> hasher;
@@ -126,7 +128,9 @@ void RadixCluster::executeClustering() {
         size_t main_size = ivec_main->size();
 
         const auto& ivec_delta = ipair_delta.first;
-        const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), main_size+1));
+        size_t delta_size = ivec_delta->size();
+        // Delta dict or if delta is empty, main dict which will not be used afterwards.
+        const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), main_size+delta_size-1));
         const auto& offset_delta = ipair_delta.second;
     
         std::hash<T> hasher;
@@ -163,7 +167,9 @@ void RadixCluster::executeClustering() {
       size_t main_size = ivec_main->size();
 
       const auto& ivec_delta = ipair_delta.first;
-      const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(field, main_size+1));
+      size_t delta_size = ivec_delta->size();
+      // Delta dict or if delta is empty, main dict which will not be used afterwards.
+      const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(field, main_size+delta_size-1));
       const auto& offset_delta = ipair_delta.second;
 
       std::hash<T> hasher;
