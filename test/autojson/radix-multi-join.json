@@ -32,8 +32,8 @@
           "hash_par": 1,
           "probe_par": 1,
           "join_par": 1,
-          "bits1": 1,
-          "bits2": 2
+          "bits1": 2,
+          "bits2": 1
         }
     },
     "edges": [
