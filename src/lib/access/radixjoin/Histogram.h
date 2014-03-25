@@ -110,10 +110,11 @@ void Histogram::executeHistogram() {
     auto hasher = std::hash<T>();
     size_t hash_value;
     for (size_t row = start; row < stop; ++row) {
-      if(row < main_size)
-        hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));
+      size_t actualRow = p->getTableRowForRow(row);
+      if(actualRow < main_size)
+        hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, actualRow)));
       else
-        hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row)-main_size)));
+        hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, actualRow-main_size)));
       pair.first->inc(0, (hash_value & mask) >> significantOffset());
     }
   } else {
@@ -142,10 +143,11 @@ void Histogram::executeHistogram() {
         auto hasher = std::hash<T>();
         size_t hash_value;
         for (size_t row = start; row < stop; ++row) {
-          if(row < main_size)
-            hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));
+          size_t actualRow = p->getTableRowForRow(row);
+          if(actualRow < main_size)
+            hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, actualRow)));
           else
-            hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row)-main_size)));
+            hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, actualRow-main_size)));
           pair.first->inc(0, (hash_value & mask) >> significantOffset());
         }
 

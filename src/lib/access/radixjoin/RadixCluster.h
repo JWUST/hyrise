@@ -95,10 +95,11 @@ void RadixCluster::executeClustering() {
     size_t hash_value;    
     for (decltype(tableSize) row = _start; row < _stop; ++row) {
       // Calculate and increment the position
-      if(row < main_size)
-        hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));  // ts(tpe,
+      size_t actualRow = p->getTableRowForRow(row);
+      if(actualRow < main_size)
+        hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, actualRow)));  // ts(tpe,
       else
-        hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row))));  // ts(tpe,
+        hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, actualRow-main_size)));  // ts(tpe,
       // fun);
       auto offset = (hash_value & mask) >> _significantOffset;
       auto pos_to_write = data_prefix_sum->inc(0, offset);
@@ -135,10 +136,11 @@ void RadixCluster::executeClustering() {
         size_t hash_value;    
         for (decltype(tableSize) row = _start; row < _stop; ++row) {
           // Calculate and increment the position
-          if(row < main_size)
-            hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, p->getTableRowForRow(row))));  // ts(tpe,
+          size_t actualRow = p->getTableRowForRow(row);
+          if(actualRow < main_size)
+            hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, actualRow)));  // ts(tpe,
           else
-            hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, p->getTableRowForRow(row))));  // ts(tpe,
+            hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, actualRow-main_size)));  // ts(tpe,
           // fun);
           auto offset = (hash_value & mask) >> _significantOffset;
           auto pos_to_write = data_prefix_sum->inc(0, offset);
