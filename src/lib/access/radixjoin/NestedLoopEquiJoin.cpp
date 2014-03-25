@@ -20,18 +20,18 @@ void NestedLoopEquiJoin::executePlanOperation() {
   auto left = input.getTable(0);
   const auto& hleft = input.getTable(1);
   const auto& pleft = input.getTable(2);
+  const size_t left_size = left->size();
 
   // Now fetch the hash table
   auto right = input.getTable(3);
   const auto& hright = input.getTable(4);
   const auto& pright = input.getTable(5);
+  const size_t right_size = right->size();
 
   // cast down left hash table, first column contains hashes (value_id_t), second column contains pos_t
   const auto& lavs0 = hleft->getAttributeVectors(0);
   const auto& lhvector =
       std::dynamic_pointer_cast<storage::FixedLengthVector<value_id_t>>(lavs0.at(0).attribute_vector);
-  // Use intermediate input size as table load input may have changed by now.
-  const size_t left_size = lhvector->size();
   const auto& lavs1 = hleft->getAttributeVectors(1);
   const auto& lpvector =
       std::dynamic_pointer_cast<storage::FixedLengthVector<value_id_t>>(lavs1.at(0).attribute_vector);
@@ -45,8 +45,6 @@ void NestedLoopEquiJoin::executePlanOperation() {
   const auto& ravs0 = hright->getAttributeVectors(0);
   const auto& rhvector =
       std::dynamic_pointer_cast<storage::FixedLengthVector<value_id_t>>(ravs0.at(0).attribute_vector);
-  // Use intermediate input size as table load input may have changed by now.
-  const size_t right_size = rhvector->size();
   const auto& ravs1 = hright->getAttributeVectors(1);
   const auto& rpvector =
       std::dynamic_pointer_cast<storage::FixedLengthVector<value_id_t>>(ravs1.at(0).attribute_vector);

@@ -113,6 +113,7 @@ void RadixCluster2ndPass::executePlanOperation() {
   assert(_bits2 != 0);
 
   const auto& tab = getInputTable();
+  auto tableSize = getInputTable()->size();
 
   auto result = getInputTable(1);
 
@@ -124,9 +125,6 @@ void RadixCluster2ndPass::executePlanOperation() {
   // Cast the vectors to the lowest part in the hierarchy
   auto data_hash = getFixedDataVector(result).first;
   auto data_pos = getFixedDataVector(result, 1).first;
-
-  // Use intermediate input size as table load input may have changed by now.
-  auto tableSize = data_hash->size();
 
   // Get the check data
   const auto& rx_hashes = getFixedDataVector(tab).first;
