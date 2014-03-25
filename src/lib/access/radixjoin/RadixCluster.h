@@ -48,7 +48,6 @@ class RadixCluster : public ParallelizablePlanOperation {
 template <typename T>
 void RadixCluster::executeClustering() {
   const auto& tab = getInputTable();
-  auto tableSize = tab->size();
   auto field = _field_definition[0];
 
   // Result Vector
@@ -65,6 +64,9 @@ void RadixCluster::executeClustering() {
   // Cast the vectors to the lowest part in the hierarchy
   const auto& data_hash = getFixedDataVector(result).first;
   const auto& data_pos = getFixedDataVector(result, 1).first;
+
+  // Use intermediate input size as table load input may have changed by now.
+  auto tableSize = std::min(data_hash->size(), data_prefix_sum->size());
 
   // Calculate start stop
   _start = 0;

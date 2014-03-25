@@ -80,7 +80,6 @@ auto _2 = QueryParser::registerPlanOperation<Histogram2ndPass>("Histogram2ndPass
 
 void Histogram2ndPass::executePlanOperation() {
   const auto& tab = getInputTable();
-  const auto tableSize = getInputTable()->size();
   const auto field = 0;  //_field_definition[0];
 
   // Prepare mask
@@ -93,6 +92,9 @@ void Histogram2ndPass::executePlanOperation() {
 
   // Get input vector
   auto i_data = getFixedDataVector(tab).first;
+
+  // Use intermediate input size as table load input may have changed by now.
+  const auto tableSize = i_data->size();
 
   // Iterate and hash based on the part description
   size_t start = 0, stop = tableSize;
