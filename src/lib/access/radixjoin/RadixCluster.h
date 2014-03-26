@@ -93,35 +93,7 @@ void RadixCluster::executeClustering() {
             "PointerCalculator inside od MutableVerticalTable.");
       }
     } else {
-      auto ipair_main = getBaseDataVector(tab, field, false);
-      auto ipair_delta = getBaseDataVector(tab, field, true);
-
-      const auto& ivec_main = ipair_main.first;
-      const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
-      const auto& offset_main = ipair_main.second;
-
-      size_t main_size = ivec_main->size();
-
-      const auto& ivec_delta = ipair_delta.first;
-      // Delta dict or if delta is empty, main dict which will not be used afterwards.
-      const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(field, tab->size()-1));
-      const auto& offset_delta = ipair_delta.second;
-
-      std::hash<T> hasher;
-      size_t hash_value;
-      for (decltype(tableSize) row = _start; row < _stop; ++row) {
-        // Calculate and increment the position
-        if(row < main_size)
-          hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, row)));  // ts(tpe, fun);
-        else
-          hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, row - main_size)));
-        auto offset = (hash_value & mask) >> _significantOffset;
-        auto pos_to_write = data_prefix_sum->inc(0, offset);
-
-        // Perform the clustering
-        data_hash->set(0, pos_to_write, hash_value);
-        data_pos->set(0, pos_to_write, row);
-      }
+      _executeHistogram<T>(tab, field, _start, _stop, bits(), significantOffset(), data_prefix_sum, nullptr, data_hash, data_pos);
     }
   }
   addResult(result);
