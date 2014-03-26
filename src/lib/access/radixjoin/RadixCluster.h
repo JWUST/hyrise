@@ -59,10 +59,6 @@ void RadixCluster::executeClustering() {
   const auto& data_prefix_sum =
       std::dynamic_pointer_cast<storage::FixedLengthVector<value_id_t>>(getFixedDataVector(prefix_sum).first->copy());
 
-  // Prepare mask
-  auto mask = ((1 << bits()) - 1) << significantOffset();
-
-  // Cast the vectors to the lowest part in the hierarchy
   const auto& data_hash = getFixedDataVector(result).first;
   const auto& data_pos = getFixedDataVector(result, 1).first;
 
