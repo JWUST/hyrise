@@ -74,7 +74,7 @@ void _executeHistogram(storage::c_atable_ptr_t tab, size_t column, size_t start,
       data_hash->set(0, pos_to_write, hash_value);
     }
     if (data_pos) {
-      data_pos->set(0, pos_to_write, actual_row);
+      data_pos->set(0, pos_to_write, row);
     }
   }
 }
