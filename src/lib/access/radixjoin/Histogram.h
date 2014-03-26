@@ -37,8 +37,9 @@ inline std::pair<std::shared_ptr<VectorType>, size_t> getFixedDataVector(
 
 // Execute the main work of the histogram
 // If this is not working on a store, you have to supply the pos_list of the PointerCalculator
+// TODO needs a better name and less parameters
 template <typename T, typename ResultType = storage::FixedLengthVector<value_id_t>>
-void _executeHistogram(storage::c_atable_ptr_t tab, size_t column, size_t start, size_t stop, uint32_t bits, uint32_t significantOffset, std::shared_ptr<ResultType> result_av, const pos_list_t *pc_pos_list = nullptr) {
+void _executeHistogram(storage::c_atable_ptr_t tab, size_t column, size_t start, size_t stop, uint32_t bits, uint32_t significantOffset, std::shared_ptr<ResultType> result_av, const pos_list_t *pc_pos_list = nullptr, std::shared_ptr<ResultType> data_hash = nullptr, std::shared_ptr<ResultType> data_pos = nullptr) {
   // TODO use std::tie
   auto ipair_main = getBaseDataVector(tab, column, false);
   auto ipair_delta = getBaseDataVector(tab, column, true);
@@ -66,7 +67,15 @@ void _executeHistogram(storage::c_atable_ptr_t tab, size_t column, size_t start,
     } else {
       hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, actual_row - main_size)));
     }
-    result_av->inc(0, (hash_value & mask) >> significantOffset);
+    // happens for histogram
+    auto pos_to_write = result_av->inc(0, (hash_value & mask) >> significantOffset);
+    // happens for cluster
+    if (data_hash) {
+      data_hash->set(0, pos_to_write, hash_value);
+    }
+    if (data_pos) {
+      data_pos->set(0, pos_to_write, actual_row);
+    }
   }
 }
 
