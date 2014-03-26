@@ -140,32 +140,7 @@ void Histogram::executeHistogram() {
       auto fieldInContainer = mvt->getOffsetInContainer(field);
       auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
       if (p) {
-        
-        auto ipair_main = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(fieldInContainer), false);
-        auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(fieldInContainer), true);
-
-        const auto& ivec_main = ipair_main.first;
-        const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(p->dictionaryAt(p->getTableColumnForColumn(fieldInContainer)));
-        const auto& offset_main = ipair_main.second;
-
-        size_t main_size = ivec_main->size();
-
-        const auto& ivec_delta = ipair_delta.first;
-        // Delta dict or if delta is empty, main dict which will not be used afterwards.
-        const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(p->dictionaryAt(p->getTableColumnForColumn(fieldInContainer), p->size()-1));
-        const auto& offset_delta = ipair_delta.second;
-
-        auto hasher = std::hash<T>();
-        size_t hash_value;
-        for (size_t row = start; row < stop; ++row) {
-          size_t actualRow = p->getTableRowForRow(row);
-          if(actualRow < main_size)
-            hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, actualRow)));
-          else
-            hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, actualRow-main_size)));
-          pair.first->inc(0, (hash_value & mask) >> significantOffset());
-        }
-
+        _executeHistogram<T>(p->getActualTable(), p->getTableColumnForColumn(fieldInContainer), start, stop, pair.first, p->getPositions());
       } else {
         throw std::runtime_error(
             "Histogram only supports MutableVerticalTable of PointerCalculators; found other AbstractTable than "
@@ -173,29 +148,7 @@ void Histogram::executeHistogram() {
       }
     } else {
       // else; we expect a raw table
-      auto ipair_main = getBaseDataVector(tab, field, false);
-      auto ipair_delta = getBaseDataVector(tab, field, true);
-
-      const auto& ivec_main = ipair_main.first;
-      const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(field));
-      const auto& offset_main = ipair_main.second;
-
-      size_t main_size = ivec_main->size();
-
-      const auto& ivec_delta = ipair_delta.first;
-      // Delta dict or if delta is empty, main dict which will not be used afterwards.
-      const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(field, tab->size()-1));
-      const auto& offset_delta = ipair_delta.second;
-
-      auto hasher = std::hash<T>();
-      size_t hash_value;
-      for (size_t row = start; row < stop; ++row) {
-        if(row < main_size)
-          hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, row)));
-        else
-          hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, row-main_size)));
-        pair.first->inc(0, (hash_value & mask) >> significantOffset());
-      }
+      _executeHistogram<T>(tab, field, start, stop, pair.first);
     }
   }
   addResult(result);
