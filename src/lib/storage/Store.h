@@ -117,6 +117,8 @@ class Store : public AbstractTable {
   // Stores the TID for each record to identify your own writes
   tbb::concurrent_vector<tx::transaction_id_t> _tidVector;
   friend class PrettyPrinter;
+  // main table pos_list
+  pos_list_t _main_pos_list;
 };
 }
 }
