@@ -70,13 +70,13 @@ class Histogram : public ParallelizablePlanOperation {
 
  private:
   template <typename T, typename ResultType = storage::FixedLengthVector<value_id_t>>
-  void _executeHistogram(storage::c_atable_ptr_t tab, size_t column, size_t start, size_t stop, std::shared_ptr<ResultType> result_av, pos_list_t *pc_pos_list = nullptr);
+  void _executeHistogram(storage::c_atable_ptr_t tab, size_t column, size_t start, size_t stop, std::shared_ptr<ResultType> result_av, const pos_list_t *pc_pos_list = nullptr);
 };
 
 // Execute the main work of the histogram
 // If this is not working on a store, you have to supply the pos_list of the PointerCalculator
 template <typename T, typename ResultType>
-void Histogram::_executeHistogram(storage::c_atable_ptr_t tab, size_t column, size_t start, size_t stop, std::shared_ptr<ResultType> result_av, pos_list_t *pc_pos_list) {
+void Histogram::_executeHistogram(storage::c_atable_ptr_t tab, size_t column, size_t start, size_t stop, std::shared_ptr<ResultType> result_av, const pos_list_t *pc_pos_list) {
   // TODO use std::tie
   auto ipair_main = getBaseDataVector(tab, column, false);
   auto ipair_delta = getBaseDataVector(tab, column, true);
@@ -131,31 +131,7 @@ void Histogram::executeHistogram() {
   // check if tab is PointerCalculator; if yes, get underlying table and actual rows and columns
   auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(tab);
   if (p) {
-
-    auto ipair_main = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), false);
-    auto ipair_delta = getBaseDataVector(p->getActualTable(), p->getTableColumnForColumn(field), true);
-
-    const auto& ivec_main = ipair_main.first;
-    const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field)));
-    const auto& offset_main = ipair_main.second;
-
-    size_t main_size = ivec_main->size();
-
-    const auto& ivec_delta = ipair_delta.first;
-    // Delta dict or if delta is empty, main dict which will not be used afterwards.
-    const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(p->getTableColumnForColumn(field), p->size()-1));
-    const auto& offset_delta = ipair_delta.second;
-
-    auto hasher = std::hash<T>();
-    size_t hash_value;
-    for (size_t row = start; row < stop; ++row) {
-      size_t actualRow = p->getTableRowForRow(row);
-      if(actualRow < main_size)
-        hash_value = hasher(main_dict->getValueForValueId(ivec_main->get(offset_main, actualRow)));
-      else
-        hash_value = hasher(delta_dict->getValueForValueId(ivec_delta->get(offset_delta, actualRow-main_size)));
-      pair.first->inc(0, (hash_value & mask) >> significantOffset());
-    }
+    _executeHistogram<T>(p->getActualTable(), p->getTableColumnForColumn(field), start, stop, pair.first, p->getPositions()); 
   } else {
     // output of radix join is MutableVerticalTable of PointerCalculators
     auto mvt = std::dynamic_pointer_cast<const storage::MutableVerticalTable>(tab);
