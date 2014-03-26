@@ -29,39 +29,41 @@ class DynamicTaskQueue : public ThreadLevelQueue<QUEUE> {
   ~DynamicTaskQueue() {}
 
   virtual void notifyReady(const std::shared_ptr<Task>& task) {
-    // TODO this is a quick and dirty fix
-    task->lockForNotifications();
     if (task->isDynamic()) {
-      task->unlockForNotifications();
       auto dynamicCount = task->determineDynamicCount(_maxTaskSize);
       auto tasks = task->applyDynamicParallelization(dynamicCount);
       for (const auto& i : tasks) {
+        i->lockForNotifications();
         if (i->isReady()) {
+          i->unlockForNotifications();
           _runQueue.push(i);
           ThreadLevelQueue<QUEUE>::_queuecheck.notify_all();
         } else {
           i->addReadyObserver(ThreadLevelQueue<QUEUE>::shared_from_this());
         }
+        i->unlockForNotifications();
       }
-    } else {  // task is not dynamic or dynamic parallelization not requested
-      task->unlockForNotifications();
+    } else {  // task is not dynamic
       _runQueue.push(task);
       ThreadLevelQueue<QUEUE>::_queuecheck.notify_all();
     }
   }
 
   virtual void schedule(const std::shared_ptr<Task>& task) {
-    // TODO quick and dirty fix (see above)
-    task->lockForNotifications();
-    if (task->isDynamic() && task->isReady()) {
-      task->unlockForNotifications();
-      uint dynamicCount = task->determineDynamicCount(_maxTaskSize);
-      auto tasks = task->applyDynamicParallelization(dynamicCount);
-      for (const auto& i : tasks) {
-        ThreadLevelQueue<QUEUE>::schedule(i);
+    if (task->isDynamic()) {
+      task->lockForNotifications();
+      if (task->isReady()) {
+        task->unlockForNotifications();
+        uint dynamicCount = task->determineDynamicCount(_maxTaskSize);
+        auto tasks = task->applyDynamicParallelization(dynamicCount);
+        for (const auto& i : tasks) {
+          ThreadLevelQueue<QUEUE>::schedule(i);
+        }
+      } else {
+        task->addReadyObserver(ThreadLevelQueue<QUEUE>::shared_from_this());
       }
-    } else {
       task->unlockForNotifications();
+    } else {
       ThreadLevelQueue<QUEUE>::schedule(task);
     }
   }
