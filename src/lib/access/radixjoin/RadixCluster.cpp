@@ -23,11 +23,9 @@ void CreateRadixTable::executePlanOperation() {
 
   // Create the result tables
   auto hashes = std::make_shared<storage::Table>(&meta1, nullptr, tableSize, true, false);
-  // TODO should this not be a reserve??
   hashes->resize(tableSize);
 
   auto positions = std::make_shared<storage::Table>(&meta2, nullptr, tableSize, true, false);
-  // TODO should this not be a reserve??
   positions->resize(tableSize);
 
   // TODO use vector literal in constructor
