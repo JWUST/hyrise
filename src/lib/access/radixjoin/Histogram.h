@@ -35,11 +35,11 @@ inline std::pair<std::shared_ptr<VectorType>, size_t> getFixedDataVector(
   return _getDataVector<VectorType>(tab, column, false); 
 }
 
-// Execute the main work of the histogram
+// Execute the main work of the histogram and cluster
 // If this is not working on a store, you have to supply the pos_list of the PointerCalculator
 // TODO needs a better name and less parameters
 template <typename T, typename ResultType = storage::FixedLengthVector<value_id_t>>
-void _executeHistogram(storage::c_atable_ptr_t tab, size_t column, size_t start, size_t stop, uint32_t bits, uint32_t significantOffset, std::shared_ptr<ResultType> result_av, const pos_list_t *pc_pos_list = nullptr, std::shared_ptr<ResultType> data_hash = nullptr, std::shared_ptr<ResultType> data_pos = nullptr) {
+void _executeRadixHashing(storage::c_atable_ptr_t tab, size_t column, size_t start, size_t stop, uint32_t bits, uint32_t significantOffset, std::shared_ptr<ResultType> result_av, const pos_list_t *pc_pos_list = nullptr, std::shared_ptr<ResultType> data_hash = nullptr, std::shared_ptr<ResultType> data_pos = nullptr) {
   // TODO use std::tie
   auto ipair_main = getBaseDataVector(tab, column, false);
   auto ipair_delta = getBaseDataVector(tab, column, true);
@@ -133,7 +133,7 @@ void Histogram::executeHistogram() {
   // check if tab is PointerCalculator; if yes, get underlying table and actual rows and columns
   auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(tab);
   if (p) {
-    _executeHistogram<T>(p->getActualTable(), p->getTableColumnForColumn(field), start, stop, bits(), significantOffset(), pair.first, p->getPositions()); 
+    _executeRadixHashing<T>(p->getActualTable(), p->getTableColumnForColumn(field), start, stop, bits(), significantOffset(), pair.first, p->getPositions()); 
   } else {
     // output of radix join is MutableVerticalTable of PointerCalculators
     auto mvt = std::dynamic_pointer_cast<const storage::MutableVerticalTable>(tab);
@@ -142,7 +142,7 @@ void Histogram::executeHistogram() {
       auto fieldInContainer = mvt->getOffsetInContainer(field);
       auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
       if (p) {
-        _executeHistogram<T>(p->getActualTable(), p->getTableColumnForColumn(fieldInContainer), start, stop, bits(), significantOffset(), pair.first, p->getPositions());
+        _executeRadixHashing<T>(p->getActualTable(), p->getTableColumnForColumn(fieldInContainer), start, stop, bits(), significantOffset(), pair.first, p->getPositions());
       } else {
         throw std::runtime_error(
             "Histogram only supports MutableVerticalTable of PointerCalculators; found other AbstractTable than "
@@ -150,7 +150,7 @@ void Histogram::executeHistogram() {
       }
     } else {
       // else; we expect a raw table
-      _executeHistogram<T>(tab, field, start, stop, bits(), significantOffset(), pair.first);
+      _executeRadixHashing<T>(tab, field, start, stop, bits(), significantOffset(), pair.first);
     }
   }
   addResult(result);
