@@ -15,7 +15,9 @@ namespace access {
 
 // Extracts the AV from the table at given column
 template <typename VectorType, typename Table>
-inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table& tab, const size_t column = 0, const bool delta = false) {
+inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table& tab,
+                                                                     const size_t column = 0,
+                                                                     const bool delta = false) {
   const auto& avs = tab->getAttributeVectors(column);
   auto index = delta ? 1 : 0;
   const auto data = std::dynamic_pointer_cast<VectorType>(avs.at(index).attribute_vector);
@@ -24,25 +26,34 @@ inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table
 }
 
 template <typename VectorType = storage::BaseAttributeVector<value_id_t>>
-inline std::pair<std::shared_ptr<VectorType>, size_t> getBaseDataVector(
-    const storage::c_atable_ptr_t& tab, const size_t column = 0, const bool delta = false) {
+inline std::pair<std::shared_ptr<VectorType>, size_t> getBaseDataVector(const storage::c_atable_ptr_t& tab,
+                                                                        const size_t column = 0,
+                                                                        const bool delta = false) {
   return _getDataVector<VectorType>(tab, column, delta);
 }
-  
+
 template <typename VectorType = storage::FixedLengthVector<value_id_t>>
-inline std::pair<std::shared_ptr<VectorType>, size_t> getFixedDataVector(
-   const storage::c_atable_ptr_t& tab, const size_t column = 0) {
-  return _getDataVector<VectorType>(tab, column, false); 
+inline std::pair<std::shared_ptr<VectorType>, size_t> getFixedDataVector(const storage::c_atable_ptr_t& tab,
+                                                                         const size_t column = 0) {
+  return _getDataVector<VectorType>(tab, column, false);
 }
 
 // Execute the main work of the histogram and cluster
 // If this is not working on a store, you have to supply the pos_list of the PointerCalculator
 // TODO needs a better name and less parameters
 template <typename T, typename ResultType = storage::FixedLengthVector<value_id_t>>
-void _executeRadixHashing(storage::c_atable_ptr_t sourceTab, size_t field, size_t start, size_t stop, uint32_t bits, uint32_t significantOffset, std::shared_ptr<ResultType> result_av, std::shared_ptr<ResultType> data_hash = nullptr, std::shared_ptr<ResultType> data_pos = nullptr) {
+void _executeRadixHashing(storage::c_atable_ptr_t sourceTab,
+                          size_t field,
+                          size_t start,
+                          size_t stop,
+                          uint32_t bits,
+                          uint32_t significantOffset,
+                          std::shared_ptr<ResultType> result_av,
+                          std::shared_ptr<ResultType> data_hash = nullptr,
+                          std::shared_ptr<ResultType> data_pos = nullptr) {
   storage::c_atable_ptr_t tab;
   size_t column;
-  const pos_list_t *pc_pos_list;
+  const pos_list_t* pc_pos_list;
 
   auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(sourceTab);
   if (p) {
@@ -88,7 +99,8 @@ void _executeRadixHashing(storage::c_atable_ptr_t sourceTab, size_t field, size_
   // Detla dict or if delta is empty, main dict which will not be used afterwards.
   // TODO does not work for empty table!!
   // TODO investigate if cast to store is possible.
-  const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(column, tab->size()-1));
+  const auto& delta_dict =
+      std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(column, tab->size() - 1));
   const auto& offset_delta = ipair_delta.second;
 
   auto hasher = std::hash<T>();
