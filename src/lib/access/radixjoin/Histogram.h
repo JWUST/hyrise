@@ -39,7 +39,6 @@ inline std::pair<std::shared_ptr<VectorType>, size_t> getFixedDataVector(const s
 }
 
 // Execute the main work of the histogram and cluster
-// If this is not working on a store, you have to supply the pos_list of the PointerCalculator
 // TODO needs a better name and less parameters
 template <typename T, typename ResultType = storage::FixedLengthVector<value_id_t>>
 void _executeRadixHashing(storage::c_atable_ptr_t sourceTab,
