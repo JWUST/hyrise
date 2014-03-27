@@ -119,6 +119,8 @@ class Store : public AbstractTable {
   friend class PrettyPrinter;
   // main table pos_list
   pos_list_t _main_pos_list;
+  // flag if main was updated
+  bool _main_dirty;
 };
 }
 }

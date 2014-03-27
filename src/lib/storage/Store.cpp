@@ -317,7 +317,7 @@ tx::TX_CODE Store::commitPositions(const pos_list_t& pos, const tx::transaction_
     if (valid) {
       _cidBeginVector[p] = cid;
     } else {
-      if(p < _main_table.size())
+      if(p < _main_table->size())
         _main_dirty = true;
       _cidEndVector[p] = cid;
     }
