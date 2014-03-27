@@ -70,28 +70,8 @@ void RadixCluster::executeClustering() {
     _stop = (_count - 1) == _part ? tableSize : (tableSize / _count) * (_part + 1);
   }
 
-  // check if tab is PointerCalculator; if yes, get underlying table and actual rows and columns
-  auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(tab);
-  if (p) {
-    _executeRadixHashing<T>(p->getActualTable(), p->getTableColumnForColumn(field), _start, _stop, bits(), significantOffset(), data_prefix_sum, p->getPositions(), data_hash, data_pos);
-  } else {
-    // output of radix join is MutableVerticalTable of PointerCalculators
-    auto mvt = std::dynamic_pointer_cast<const storage::MutableVerticalTable>(tab);
-    if (mvt) {
-      auto pc = mvt->containerAt(field);
-      auto fieldInContainer = mvt->getOffsetInContainer(field);
-      auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
-      if (p) {
-        _executeRadixHashing<T>(p->getActualTable(), p->getTableColumnForColumn(fieldInContainer), _start, _stop, bits(), significantOffset(), data_prefix_sum, p->getPositions(), data_hash, data_pos);
-      } else {
-        throw std::runtime_error(
-            "Histogram only supports MutableVerticalTable of PointerCalculators; found other AbstractTable than "
-            "PointerCalculator inside od MutableVerticalTable.");
-      }
-    } else {
-      _executeRadixHashing<T>(tab, field, _start, _stop, bits(), significantOffset(), data_prefix_sum, nullptr, data_hash, data_pos);
-    }
-  }
+  _executeRadixHashing<T>(tab, field, _start, _stop, bits(), significantOffset(), data_prefix_sum, data_hash, data_pos);
+
   addResult(result);
 }
 
