@@ -7,11 +7,10 @@ namespace hyrise {
 namespace access {
 
 class GetLastRecords : public PlanOperation {
-public:
-	size_t _records;
- 	void executePlanOperation();
-	static std::shared_ptr<PlanOperation> parse(const Json::Value& data);
+ public:
+  size_t _records;
+  void executePlanOperation();
+  static std::shared_ptr<PlanOperation> parse(const Json::Value& data);
 };
 }
 }
-
