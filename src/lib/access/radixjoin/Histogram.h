@@ -6,40 +6,38 @@
 
 #include "storage/FixedLengthVector.h"
 #include "storage/BaseAttributeVector.h"
-#include "storage/OrderPreservingDictionary.h"
 #include "storage/BaseDictionary.h"
 #include "storage/PointerCalculator.h"
+#include "storage/Store.h"
+#include "helper/types.h"
 
 namespace hyrise {
 namespace access {
 
 // Extracts the AV from the table at given column
 template <typename VectorType, typename Table>
-inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table& tab,
-                                                                     const size_t column = 0,
-                                                                     const bool delta = false) {
+inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table& tab, const size_t column = 0) {
   const auto& avs = tab->getAttributeVectors(column);
-  auto index = delta ? 1 : 0;
-  const auto data = std::dynamic_pointer_cast<VectorType>(avs.at(index).attribute_vector);
+  assert(avs.size() == 1 || (avs.size() == 2 && std::dynamic_pointer_cast<storage::BaseAttributeVector<value_id_t>>(
+                                                    avs.at(1).attribute_vector)->size() == 0));
+  const auto& data = std::dynamic_pointer_cast<VectorType>(avs.front().attribute_vector);
   assert(data != nullptr);
-  return {data, avs.at(index).attribute_offset};
-}
-
-template <typename VectorType = storage::BaseAttributeVector<value_id_t>>
-inline std::pair<std::shared_ptr<VectorType>, size_t> getBaseDataVector(const storage::c_atable_ptr_t& tab,
-                                                                        const size_t column = 0,
-                                                                        const bool delta = false) {
-  return _getDataVector<VectorType>(tab, column, delta);
+  return {data, avs.front().attribute_offset};
 }
 
 template <typename VectorType = storage::FixedLengthVector<value_id_t>>
 inline std::pair<std::shared_ptr<VectorType>, size_t> getFixedDataVector(const storage::c_atable_ptr_t& tab,
                                                                          const size_t column = 0) {
-  return _getDataVector<VectorType>(tab, column, false);
+  return _getDataVector<VectorType>(tab, column);
 }
 
-// Execute the main work of the histogram and cluster
-// TODO needs a better name and less parameters
+template <typename VectorType = storage::BaseAttributeVector<value_id_t>>
+inline std::pair<std::shared_ptr<VectorType>, size_t> getBaseVector(const storage::c_atable_ptr_t& tab,
+                                                                    const size_t column) {
+  return _getDataVector<VectorType>(tab, column);
+}
+
+// Execute the main work of histogram and cluster
 template <typename T, typename ResultType = storage::FixedLengthVector<value_id_t>>
 void _executeRadixHashing(storage::c_atable_ptr_t sourceTab,
                           size_t field,
@@ -73,7 +71,7 @@ void _executeRadixHashing(storage::c_atable_ptr_t sourceTab,
       } else {
         throw std::runtime_error(
             // TODO put in other comment
-            "Histogram only supports MutableVerticalTable of PointerCalculators; found other AbstractTable than "
+            "Radix only supports MutableVerticalTable of PointerCalculators; found other AbstractTable than "
             "PointerCalculator inside MutableVerticalTable.");
       }
     } else {
@@ -84,23 +82,23 @@ void _executeRadixHashing(storage::c_atable_ptr_t sourceTab,
     }
   }
 
-  // TODO use std::tie
-  auto ipair_main = getBaseDataVector(tab, column, false);
-  auto ipair_delta = getBaseDataVector(tab, column, true);
+  auto store = std::dynamic_pointer_cast<const storage::Store>(tab);
+  if (!store) {
+    throw std::runtime_error("Could not cast to store!");
+  }
 
-  const auto& ivec_main = ipair_main.first;
-  const auto& main_dict = std::dynamic_pointer_cast<storage::OrderPreservingDictionary<T>>(tab->dictionaryAt(column));
-  const auto& offset_main = ipair_main.second;
+  const auto& main = store->getMainTable();
+  const auto& delta = store->getDeltaTable();
+
+  std::shared_ptr<storage::BaseAttributeVector<value_id_t>> ivec_main, ivec_delta;
+  size_t offset_main, offset_delta;
+  std::tie(ivec_main, offset_main) = getBaseVector(main, column);
+  std::tie(ivec_delta, offset_delta) = getBaseVector(delta, column);
 
   size_t main_size = ivec_main->size();
 
-  const auto& ivec_delta = ipair_delta.first;
-  // Detla dict or if delta is empty, main dict which will not be used afterwards.
-  // TODO does not work for empty table!!
-  // TODO investigate if cast to store is possible.
-  const auto& delta_dict =
-      std::dynamic_pointer_cast<storage::BaseDictionary<T>>(tab->dictionaryAt(column, tab->size() - 1));
-  const auto& offset_delta = ipair_delta.second;
+  const auto& main_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(main->dictionaryAt(column));
+  const auto& delta_dict = std::dynamic_pointer_cast<storage::BaseDictionary<T>>(delta->dictionaryAt(column));
 
   auto hasher = std::hash<T>();
   auto mask = ((1 << bits) - 1) << significantOffset;
@@ -166,7 +164,7 @@ void Histogram::executeHistogram() {
 
   // Prepare Output Table
   auto result = createOutputTable(1 << bits());
-  auto pair = getFixedDataVector(result);
+  auto result_av = getFixedDataVector(result).first;
 
   // Iterate and hash based on the part description
   size_t start = 0, stop = tableSize;
@@ -175,7 +173,7 @@ void Histogram::executeHistogram() {
     stop = (_count - 1) == _part ? tableSize : (tableSize / _count) * (_part + 1);
   }
 
-  _executeRadixHashing<T>(tab, field, start, stop, bits(), significantOffset(), pair.first);
+  _executeRadixHashing<T>(tab, field, start, stop, bits(), significantOffset(), result_av);
 
   addResult(result);
 }
