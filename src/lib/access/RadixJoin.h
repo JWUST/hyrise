@@ -27,8 +27,8 @@ class RadixJoin : public PlanOperation {
   virtual size_t calcA(size_t totalTblSizeIn100k);
   virtual double min_mts_a() { return 0; }
   virtual double min_mts_b() { return 0; }
-  virtual double a_a() { return 0.0858974002969293 / 3.2; }
-  virtual double a_b() { return 1.00479789496181 / 3.2; }
+  virtual double a_a() { return 0.0858974002969293 / 12.0; }
+  virtual double a_b() { return 1.00479789496181 / 12.0; }
 
  private:
   uint32_t _bits1;
