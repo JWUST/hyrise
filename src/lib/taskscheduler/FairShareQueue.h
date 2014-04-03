@@ -30,6 +30,7 @@ class FairShareQueue : virtual public ThreadLevelQueue<QUEUE>,
 	public TaskDoneObserver	{
  protected:
   static const int MAX_SESSIONS = 1000;
+  static const int SESSION_IGNORE = -1;
   //static const int AVERAGE_SAMPLE_SIZE = 100;
   static const uint64_t PRIO_UPDATE_INTERVALL = 100000000;
   static const int INACTIVE_USER_INTERVALL = 20;
@@ -94,26 +95,28 @@ class FairShareQueue : virtual public ThreadLevelQueue<QUEUE>,
   // if task arrives with highest priority, schedule -> this is currently used for RequestParseTask, as we do not have a session ID prior to parsing the JSON
   if(task->isReady() && (task->getPriority() != Task::HIGH_PRIORITY)){
     int session = task->getSessionId();
-    // check if session is already present
-    auto ret = _sessionMap.find(session);
-    if(ret == _sessionMap.end()){
-      // check if max number of session reached / this should be moved out of the scheduler at some point in time
-      if(_sessions >= MAX_SESSIONS){
-        fprintf(stderr, "Max nr of sessions reached - task not scheduled!!!!\n");
+    //ignore some queries; used for setup queries
+    if(session == SESSION_IGNORE){
+      // check if session is already present
+      auto ret = _sessionMap.find(session);
+      if(ret == _sessionMap.end()){
+        // check if max number of session reached / this should be moved out of the scheduler at some point in time
+        if(_sessions >= MAX_SESSIONS){
+          fprintf(stderr, "Max nr of sessions reached - task not scheduled!!!!\n");
+        }
+        // if not add session
+        addSession(session, task->getPriority());
+        ret = _sessionMap.find(session);
       }
-      // if not add session
-      addSession(session, task->getPriority());
-      ret = _sessionMap.find(session);
+      // set dynamic priority for task and schedule
+      task->setPriority(__sync_fetch_and_add(&_dynPriorities[ret->second],0));
+      task->setSessionId(ret->second);
+
+      //update activity
+      std::lock_guard<std::mutex> lk(_activityMutex);
+      _userActivity[ret->second] = get_epoch_nanoseconds();
     }
-    // set dynamic priority for task and schedule
-    task->setPriority(__sync_fetch_and_add(&_dynPriorities[ret->second],0));
-    task->setSessionId(ret->second);
-
-    //update activity
-    std::lock_guard<std::mutex> lk(_activityMutex);
-    _userActivity[ret->second] = get_epoch_nanoseconds();
   }
-
   // addDoneObserver to get task execution time
   task->addDoneObserver(my_enable_shared_from_this<TaskDoneObserver>::shared_from_this());
 

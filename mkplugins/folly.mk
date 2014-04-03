@@ -1,2 +1,2 @@
-LIBS += glog folly
+LDFLAGS += -lglog -lfolly
 CPPFLAGS += -DHYRISE_USE_FOLLY

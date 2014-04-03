@@ -61,11 +61,11 @@ class TaskDoneObserver : public my_enable_shared_from_this<TaskDoneObserver> {
  */
 class Task : public TaskDoneObserver, public my_enable_shared_from_this<Task> {
 public:
-  static const int DEFAULT_PRIORITY = 999;
-  static const int HIGH_PRIORITY = 1;
-  static const int NO_PREFERRED_CORE = -1;
-  static const int NO_PREFERRED_NODE = -1;
-  static const int SESSION_ID_NOT_SET = 0;
+  static const int DEFAULT_PRIORITY;
+  static const int HIGH_PRIORITY;
+  static const int NO_PREFERRED_CORE;
+  static const int NO_PREFERRED_NODE;
+  static const int SESSION_ID_NOT_SET;
   // split up the operator in as many instances as indicated by dynamicCount
   virtual std::vector<task_ptr_t> applyDynamicParallelization(size_t dynamicCount);
   // determine the number of instances necessary to adhere to a max task size.

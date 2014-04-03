@@ -214,8 +214,8 @@ CPPFLAGS.release += -DEXPENSIVE_TESTS -DPRODUCTION -DNDEBUG
 CFLAGS.debug +=
 CFLAGS.release +=
 
-LDFLAGS.debug += -lglog -lfolly
-LDFLAGS.release += -lglog -lfolly
+LDFLAGS.debug +=
+LDFLAGS.release += 
 
 COMMON_FLAGS.debug += -O0
 COMMON_FLAGS.release += -O3 -march=native

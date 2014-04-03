@@ -21,6 +21,12 @@ log4cxx::LoggerPtr _logger(log4cxx::Logger::getLogger("hyrise.taskscheduler"));
 namespace hyrise {
 namespace taskscheduler {
 
+  const int Task::DEFAULT_PRIORITY = 999;
+  const int Task::HIGH_PRIORITY = 1;
+  const int Task::NO_PREFERRED_CORE = -1;
+  const int Task::NO_PREFERRED_NODE = -1;
+  const int Task::SESSION_ID_NOT_SET = -1;
+
 std::vector<std::shared_ptr<Task>> Task::applyDynamicParallelization(size_t dynamicCount) {
   LOG4CXX_ERROR(_logger, "Dynamic Parallelization has not been implemented for this operator.");
   LOG4CXX_ERROR(_logger, "Running without parallelization.");
