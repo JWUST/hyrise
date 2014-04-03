@@ -56,9 +56,9 @@ class PlanOperation : public OutputTask {
    */
   virtual size_t getTotalTableSize();
   /* determine the b parameter also known as minimal achievable mts */
-  virtual double calcMinMts(double totalTblSizeIn100k);
+  virtual signed int calcMinMts(size_t totalTblSizeIn100k);
   /* determine the a parameter of the model. */
-  virtual double calcA(double totalTblSizeIn100k);
+  virtual size_t calcA(size_t totalTblSizeIn100k);
   /*
    * The standard implementation of the calc* method assume
    * a straight line model with a*x + b.

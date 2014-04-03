@@ -37,16 +37,18 @@ class NodeBoundQueue : virtual public ThreadLevelQueue<QUEUE> {
     hwloc_obj_t obj;
     hwloc_topology_t topology = getHWTopology();
     // get ids for cores of the actual node
-    std::vector<unsigned> cores = getCoresForNode(topology, _node);
+    std::vector<hwloc_cpuset_t> cores = getCPUSetsForNode(topology, _node);
     hwloc_cpuset_t cpuset;
     // allocate cpuset
     cpuset = hwloc_bitmap_alloc();
     // start thread
     std::thread* thread = new std::thread(&NodeBoundQueue<QUEUE>::executeTasks, this);
 
+    std::cout << " threads of node " << node << "("<< _node<<") are bound to the following cores " << std::endl;
     // set all cores in cpuset
     for (size_t i = 0; i < cores.size(); i++) {
-      hwloc_bitmap_set(cpuset, cores[i]);
+      hwloc_bitmap_or(cpuset, cpuset, cores[i]);
+      //std::cout << cores[i] << std::endl;
     }
 
     // set affinity of thread to the node
@@ -76,6 +78,10 @@ class NodeBoundQueue : virtual public ThreadLevelQueue<QUEUE> {
     hwloc_bitmap_free(cpuset);
     ThreadLevelQueue<QUEUE>::_threads.push_back(thread);
   }
+
+
+
+
 };
 }
 }

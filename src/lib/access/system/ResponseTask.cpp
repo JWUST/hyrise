@@ -214,7 +214,7 @@ void ResponseTask::operator()() {
   LOG4CXX_DEBUG(_logger, response);
 
   Json::FastWriter fw;
-  connection->respond(fw.write(response));
+  connection->respond(fw.write(response), _error_messages.empty() ? 200 : 500);
 }
 }
 }

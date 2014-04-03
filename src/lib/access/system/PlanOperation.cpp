@@ -26,9 +26,11 @@ namespace access {
 
 size_t PlanOperation::getTotalTableSize() { return 0; }
 
-double PlanOperation::calcMinMts(double totalTblSizeIn100k) { return min_mts_a() * totalTblSizeIn100k + min_mts_b(); }
+signed int PlanOperation::calcMinMts(size_t totalTblSizeIn100k) {
+  return std::trunc(min_mts_a() * totalTblSizeIn100k + min_mts_b());
+}
 
-double PlanOperation::calcA(double totalTblSizeIn100k) { return a_a() * totalTblSizeIn100k + a_b(); }
+size_t PlanOperation::calcA(size_t totalTblSizeIn100k) { return std::trunc(a_a() * totalTblSizeIn100k + a_b()); }
 
 size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
   // this can never be satisfied. Default to NO parallelization.
@@ -44,17 +46,18 @@ size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
     return 1;
   }
 
-  auto totalTblSizeIn100k = totalTableSize / 100000.0;
+  size_t totalTblSizeIn100k = std::trunc(totalTableSize / 100000.0);
 
   // this is the b of the mts = a / instances + b  model
   auto minMts = calcMinMts(totalTblSizeIn100k);
 
-  if (maxTaskRunTime < minMts) {
+  if ((signed int)maxTaskRunTime < minMts) {
     LOG4CXX_ERROR(logger, planOperationName() << ": Could not honor MTS request. Too small.");
     return 1024;
   }
 
   auto a = calcA(totalTblSizeIn100k);
+  // Div by 0 not possible since maxTaskRunTime < minMtx, see above.
   size_t numTasks = std::max(1, static_cast<int>(round(a / (maxTaskRunTime - minMts))));
 
   LOG4CXX_DEBUG(logger, planOperationName() << ": tts(in 100k): " << totalTblSizeIn100k << ", numTasks: " << numTasks);

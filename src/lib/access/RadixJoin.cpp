@@ -61,9 +61,9 @@ size_t RadixJoin::getTotalTableSize() {
   return inputTable->size() + inputTable2->size();
 }
 
-double RadixJoin::calcMinMts(double totalTblSizeIn100k) { return min_mts_a() / totalTblSizeIn100k + min_mts_b(); }
-
-double RadixJoin::calcA(double totalTblSizeIn100k) { return a_a() * std::pow(totalTblSizeIn100k, 2) + a_b(); }
+size_t RadixJoin::calcA(size_t totalTblSizeIn100k) {
+  return std::trunc(a_a() * std::pow(totalTblSizeIn100k, 2) + a_b());
+}
 
 // FIXME merge logic with RadixJoinTransformation.
 std::vector<taskscheduler::task_ptr_t> RadixJoin::applyDynamicParallelization(size_t dynamicCount) {
@@ -92,6 +92,8 @@ std::vector<taskscheduler::task_ptr_t> RadixJoin::applyDynamicParallelization(si
   // restrict max degree of parallelism to 24 (MaxParallelizationDegree), as parallel algo for prefix sums does not
   // really scale well
   size_t degree = std::min(dynamicCount, RadixJoin::MaxParallelizationDegree);
+
+  // TODO make sure not to use degree 0. Assertion?
 
   // create ops and edges for probe side
   auto probe_side = build_probe_side(
