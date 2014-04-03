@@ -74,7 +74,7 @@ std::string QueryParser::getPapiEventName(const Json::Value& query) const {
 }
 
 int QueryParser::getSessionId(const Json::Value& query) const {
-  return query.isMember("sessionId") ? query["sessionId"].asInt() : 0;
+  return query.isMember("sessionId") ? query["sessionId"].asInt() : -1;
 }
 
 void QueryParser::setDependencies(const Json::Value& query, task_map_t& task_map) const {

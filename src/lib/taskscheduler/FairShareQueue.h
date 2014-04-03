@@ -96,7 +96,7 @@ class FairShareQueue : virtual public ThreadLevelQueue<QUEUE>,
   if(task->isReady() && (task->getPriority() != Task::HIGH_PRIORITY)){
     int session = task->getSessionId();
     //ignore some queries; used for setup queries
-    if(session == SESSION_IGNORE){
+    if(session != SESSION_IGNORE){
       // check if session is already present
       auto ret = _sessionMap.find(session);
       if(ret == _sessionMap.end()){
@@ -127,20 +127,22 @@ void notifyReady(const std::shared_ptr<Task> & task) {
   // if task arrives with highest priority, schedule -> this is currently used for RequestParseTask, as we do not have a session ID
   if(task->isReady() && (task->getPriority() != Task::HIGH_PRIORITY)){
     int session = task->getSessionId();
-    // check if session is already present
-    auto ret = _sessionMap.find(session);
-    if(ret == _sessionMap.end()){
-      // check if max number of session reached / this should be moved out of the scheduler at some point in time
-      if(_sessions >= MAX_SESSIONS){
-        fprintf(stderr, "Max nr of sessions reached - task not scheduled!!!!\n");
+    if(session != SESSION_IGNORE){
+      // check if session is already present
+      auto ret = _sessionMap.find(session);
+      if(ret == _sessionMap.end()){
+        // check if max number of session reached / this should be moved out of the scheduler at some point in time
+        if(_sessions >= MAX_SESSIONS){
+          fprintf(stderr, "Max nr of sessions reached - task not scheduled!!!!\n");
+        }
+        // if not add session
+        addSession(session, task->getPriority());
+        ret = _sessionMap.find(session);
       }
-      // if not add session
-      addSession(session, task->getPriority());
-      ret = _sessionMap.find(session);
+      // set dynamic priority for task and schedule
+      task->setPriority(__sync_fetch_and_add(&_dynPriorities[ret->second],0));
+      task->setSessionId(ret->second);
     }
-    // set dynamic priority for task and schedule
-    task->setPriority(__sync_fetch_and_add(&_dynPriorities[ret->second],0));
-    task->setSessionId(ret->second);
   }
 
   ThreadLevelQueue<QUEUE>::notifyReady(task);
@@ -185,7 +187,7 @@ void notifyDone(const std::shared_ptr<Task> &task){
    */
   auto op =  std::dynamic_pointer_cast<OutputTask>(task);
    if(op){
-     // calc total duration of query; therefore check first, if performance data has been set
+     // calc total duration of task; therefore check first, if performance data has been set
      int64_t work = ! &op->getPerformanceData() ? 0 : op->getPerformanceData().data;
      // add to total work of session and total work
      auto ret = _workMap.find(task->getSessionId());
@@ -193,8 +195,10 @@ void notifyDone(const std::shared_ptr<Task> &task){
        __sync_fetch_and_add(&ret->second, work);
        _totalWork += work;
      }
-     else
-       fprintf(stderr, "No matching task found in map\n");
+     else{
+
+      std::cout << "No matching session found in map\n; " <<  std::endl;
+     }
      // check if prios need to be updated (TBD - currently after every query)
      // however, only one thread should update at a time
      bool expected = false;
@@ -211,14 +215,14 @@ void notifyDone(const std::shared_ptr<Task> &task){
 }
 
 void updateDynamicPriorities(){
-  std::vector<int64_t> work(_sessions);
+  std::vector<int64_t> work(_sessions, 0);
   std::vector<std::pair<double, int> > shares(_sessions);
   // sum up total_work according to values read out of ahm; global _totalWork might change, as we do not stop the scheduler
   int64_t total_work = 0;
   // get work for all sessions
   for(int i = 0; i < _sessions; i++){
     // atomically fetch work and set to zero by AND with 0
-    int ret = __sync_fetch_and_and(&_workMap.find(i)->second,0);
+    int64_t ret = __sync_fetch_and_and(&_workMap.find(i)->second,0);
     work[i] = ret;
     total_work += ret;
   }
@@ -286,7 +290,7 @@ void updateDynamicPriorities(){
   std::cout << "\t_workMap  -  total work:" << total_work << std::endl;
   for(int i = 0; i < _sessions; i++){
     if(total_work > 0)
-      std::cout << "\t\tsession: " << _workMap.find(i)->first << " work: " <<  work[i] << " work share in interval " << (double)work[i]/total_work<< std::endl;
+      std::cout << "\t\tsession: " <<  _workMap.find(i)->first << " work: " <<  work[i] << " work share in interval " << (double)work[i]/total_work<< std::endl;
   }
   std::cout << "\tprios  - total prios:" << _totalPriorities << std::endl;
   for(int i = 0; i < _sessions; i++){
@@ -307,6 +311,11 @@ void updateDynamicPriorities(){
   std::cout << "\tuser activity" << std::endl;
   for(int i = 0; i < _sessions; i++){
     std::cout << "\t\tsession: " << shares[i].second << " useractivity: " << _userActivity[i]  << std::endl;
+  }
+
+  std::cout << "\texternal session map" << std::endl;
+  for(auto i = _sessionMap.begin(); i != _sessionMap.end(); i++){
+    std::cout << "\t\tsessionmap: " << i->first << " maps to internal session: " << i->second  << std::endl;
   }
 
 }

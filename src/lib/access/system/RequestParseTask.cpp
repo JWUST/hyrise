@@ -78,7 +78,7 @@ void RequestParseTask::operator()() {
   std::vector<std::shared_ptr<Task> > tasks;
 
   int priority = Task::DEFAULT_PRIORITY;
-  int sessionId = 0;
+  int sessionId = Task::SESSION_ID_NOT_SET;
 
   if (_connection->hasBody()) {
     // The body is a wellformed HTTP Post body, with key value pairs
