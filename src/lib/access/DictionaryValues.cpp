@@ -29,22 +29,20 @@ struct DictionaryValuesFunctor {
       assert(main_base_dict != nullptr);
       assert(delta_base_dict != nullptr);
 
-      std::vector<R> partResult;
-      for (auto it = main_base_dict->begin(); it != main_base_dict->end(); ++it) {
-        partResult.push_back(*it);
-      }
-      for (auto it = delta_base_dict->begin(); it != delta_base_dict->end(); ++it) {
-        partResult.push_back(*it);
-      }
-
       // create output table
       field_list_t subfields({column});
       auto result = store->copy_structure_modifiable(&subfields);
-      result->resize(partResult.size());
-      for (size_t i = 0; i < partResult.size(); ++i) {
-        result->setValue<R>(0, i, partResult[i]);
+      result->resize(main_base_dict->size() + delta_base_dict->size());
+      int i = 0;
+      for (auto it = main_base_dict->begin(); it != main_base_dict->end(); ++it) {
+        result->setValue<R>(0, i, *it);
+        i++;
       }
-      
+      for (auto it = delta_base_dict->begin(); it != delta_base_dict->end(); ++it) {
+        result->setValue<R>(0, i, *it);
+        i++;
+      }
+
       return result;
   }
 };
