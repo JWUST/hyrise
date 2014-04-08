@@ -98,7 +98,25 @@ class ThreadLevelQueue : public AbstractTaskScheduler,
   }
 
  protected:
-  virtual void launchThread() { _threads.push_back(new std::thread(&ThreadLevelQueue<QUEUE>::executeTasks, this)); }
+  virtual void launchThread() {
+    //_threads.push_back(new std::thread(&ThreadLevelQueue<QUEUE>::executeTasks, this));                                                                                                                                     
+    std::cout << "here"<< std::endl;
+    std::thread* thread;
+    thread = new std::thread(&ThreadLevelQueue<QUEUE>::executeTasks, this);
+    hwloc_obj_t obj;
+    hwloc_topology_t topology = getHWTopology();
+    obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MACHINE, 0);
+    // set membind policy interleave for this thread                          
+    if (hwloc_set_membind_nodeset(topology, obj->nodeset, HWLOC_MEMBIND_INTERLEAVE, HWLOC_MEMBIND_STRICT | HWLOC_MEMBIND_THREAD)) {
+      char* str;
+      int error = errno;
+      hwloc_bitmap_asprintf(&str, obj->nodeset);
+      fprintf(stderr, "Couldn't membind to nodeset  %s: %s\n", str, strerror(error));
+      fprintf(stderr, "Continuing as normal, however, no guarantees\n");
+      free(str);
+     }
+    ThreadLevelQueue<QUEUE>::_threads.push_back(thread);
+ }
 
   virtual void executeTasks() {
     size_t retries = 0;
