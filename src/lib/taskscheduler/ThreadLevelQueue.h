@@ -100,7 +100,6 @@ class ThreadLevelQueue : public AbstractTaskScheduler,
  protected:
   virtual void launchThread() {
     //_threads.push_back(new std::thread(&ThreadLevelQueue<QUEUE>::executeTasks, this));                                                                                                                                     
-    std::cout << "here"<< std::endl;
     std::thread* thread;
     thread = new std::thread(&ThreadLevelQueue<QUEUE>::executeTasks, this);
     hwloc_obj_t obj;
