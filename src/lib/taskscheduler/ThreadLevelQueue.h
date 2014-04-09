@@ -99,9 +99,7 @@ class ThreadLevelQueue : public AbstractTaskScheduler,
 
  protected:
   virtual void launchThread() {
-    //_threads.push_back(new std::thread(&ThreadLevelQueue<QUEUE>::executeTasks, this));                                                                                                                                     
-    std::thread* thread;
-    thread = new std::thread(&ThreadLevelQueue<QUEUE>::executeTasks, this);
+    std::thread* thread = new std::thread(&ThreadLevelQueue<QUEUE>::executeTasks, this);
     hwloc_obj_t obj;
     hwloc_topology_t topology = getHWTopology();
     obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MACHINE, 0);
@@ -138,7 +136,7 @@ class ThreadLevelQueue : public AbstractTaskScheduler,
             std::this_thread::yield();
         } else {
           std::unique_lock<lock_t> locker(_lockqueue);
-          if (_status != RUN)
+          if (_status != RUN && _status != START_UP)
             break;
           _queuecheck.wait(locker);
           retries = 0;
