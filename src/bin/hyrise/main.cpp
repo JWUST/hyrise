@@ -89,24 +89,24 @@ void bindToNode(int node) {
   hwloc_cpuset_t cpuset;
   hwloc_obj_t obj;
 
-  // The actual core
-  obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_CORE, node);
-  cpuset = hwloc_bitmap_dup(obj->cpuset);
-  hwloc_bitmap_singlify(cpuset);
-
   // bind
-  if (hwloc_set_cpubind(topology, cpuset, HWLOC_CPUBIND_STRICT | HWLOC_CPUBIND_NOMEMBIND | HWLOC_CPUBIND_PROCESS)) {
-    char* str;
-    int error = errno;
-    hwloc_bitmap_asprintf(&str, obj->cpuset);
-    printf("Couldn't bind to cpuset %s: %s\n", str, strerror(error));
-    free(str);
-    throw std::runtime_error(strerror(error));
+  if(node >= 0){
+    // The actual core
+    obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_CORE, node);
+    cpuset = hwloc_bitmap_dup(obj->cpuset);
+    hwloc_bitmap_singlify(cpuset);
+    if (hwloc_set_cpubind(topology, cpuset, HWLOC_CPUBIND_STRICT | HWLOC_CPUBIND_NOMEMBIND | HWLOC_CPUBIND_PROCESS)) {
+      char* str;
+      int error = errno;
+      hwloc_bitmap_asprintf(&str, obj->cpuset);
+      printf("Couldn't bind to cpuset %s: %s\n", str, strerror(error));
+      free(str);
+      throw std::runtime_error(strerror(error));
+    }
+    // free duplicated cpuset
+    hwloc_bitmap_free(cpuset);
   }
-
-  // free duplicated cpuset
-  hwloc_bitmap_free(cpuset);
-
+  
   // assuming single machine system
   obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MACHINE, 0);
   // set membind policy interleave for this thread
@@ -173,6 +173,7 @@ int main(int argc, char* argv[]) {
   }
   // if no core bound scheduler, set the number of threads to core-count
   else {
+    bindToNode(-1);
     if (worker_threads == -1)
       worker_threads = getNumberOfCoresOnSystem();
   }
