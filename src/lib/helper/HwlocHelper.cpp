@@ -84,9 +84,7 @@ std::vector<hwloc_cpuset_t> getCPUSetsForNode(hwloc_topology_t topology, unsigne
   // iterate over cores and check whether in subtree
   for (unsigned i = 0; i < number_of_cores; i++) {
     hwloc_obj_t core = hwloc_get_obj_by_type(topology, HWLOC_OBJ_CORE, i);
-    std::cout << "core test" << i << std::endl;
     if (hwloc_obj_is_in_subtree(topology, core, obj)) {
-      std::cout << "core test pass" << i << std::endl;
       children.push_back(core->cpuset);
     }
   }

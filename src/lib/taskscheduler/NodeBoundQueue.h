@@ -43,8 +43,6 @@ class NodeBoundQueue : virtual public ThreadLevelQueue<QUEUE> {
     cpuset = hwloc_bitmap_alloc();
     // start thread
     std::thread* thread = new std::thread(&NodeBoundQueue<QUEUE>::executeTasks, this);
-
-    std::cout << " threads of node " << node << "("<< _node<<") are bound to the following cores " << std::endl;
     // set all cores in cpuset
     for (size_t i = 0; i < cores.size(); i++) {
       hwloc_bitmap_or(cpuset, cpuset, cores[i]);

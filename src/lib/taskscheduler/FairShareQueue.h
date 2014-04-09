@@ -31,8 +31,8 @@ class FairShareQueue : virtual public ThreadLevelQueue<QUEUE>,
  protected:
   static const int MAX_SESSIONS = 1000;
   static const int SESSION_IGNORE = -1;
-  //static const int AVERAGE_SAMPLE_SIZE = 100;
-  static const uint64_t PRIO_UPDATE_INTERVALL = 100000000;
+  static const int AVERAGE_SAMPLE_SIZE = 1000;
+  static const uint64_t PRIO_UPDATE_INTERVALL = 200000000;
   static const int INACTIVE_USER_INTERVALL = 20;
   // weighs importance of last interval
   //static constexpr double DATA_SMOOTHING_FACTOR = 0.1;
@@ -66,26 +66,27 @@ class FairShareQueue : virtual public ThreadLevelQueue<QUEUE>,
   // mutex to avoid duplicate sessions
   std::mutex _addSessionMutex;
   std::atomic<int> _epoch;
-
+  RollingAverage<int64_t> _avgTaskSize;
 
  public:
   //we allow max 1000 sessions; ahm should not be dynamically resized
   FairShareQueue(int threads = getNumberOfCoresOnSystem()): ThreadLevelQueue<QUEUE>(threads),
-                                                                      _workMap(MAX_SESSIONS),
-                                                                      _dynPriorities(MAX_SESSIONS, 0),
-                                                                      _extPriorities(MAX_SESSIONS, 0),
-                                                                      //_smoothedWorkShares(MAX_SESSIONS,0),
-                                                                      //_trendWorkShares(MAX_SESSIONS,0),
-                                                                      _userActivity(MAX_SESSIONS,0),
-                                                                      _isOnlyUser(MAX_SESSIONS, 0),
-                                                                      _averageWorkShares(MAX_SESSIONS, RollingAverage<float>(50)),
-                                                                      _sessionMap(MAX_SESSIONS),
-                                                                      _totalWork(0),
-                                                                      _totalPriorities(0),
-                                                                      _sessions(0),
-                                                                      _isUpdatingPrios(false),
-                                                                      _lastUpdatePrios(0),
-                                                                      _epoch(0){
+    _workMap(MAX_SESSIONS),
+    _dynPriorities(MAX_SESSIONS, 0),
+    _extPriorities(MAX_SESSIONS, 0),
+    //_smoothedWorkShares(MAX_SESSIONS,0),
+    //_trendWorkShares(MAX_SESSIONS,0),
+    _userActivity(MAX_SESSIONS,0),
+    _isOnlyUser(MAX_SESSIONS, 0),
+    _averageWorkShares(MAX_SESSIONS, RollingAverage<float>(AVERAGE_SAMPLE_SIZE)),
+    _sessionMap(MAX_SESSIONS),
+    _totalWork(0),
+    _totalPriorities(0),
+    _sessions(0),
+    _isUpdatingPrios(false),
+    _lastUpdatePrios(0),
+    _epoch(0),
+    _avgTaskSize(RollingAverage<int64_t>(AVERAGE_SAMPLE_SIZE*1000)){
   };
 
   ~FairShareQueue() {}
@@ -150,12 +151,6 @@ void notifyReady(const std::shared_ptr<Task> & task) {
 
 void notifyDone(const std::shared_ptr<Task> &task){
      
-  {
-    //update activity
-    std::lock_guard<std::mutex> lk(_activityMutex);
-    if(task->getSessionId()!= Task::SESSION_ID_NOT_SET)
-      _userActivity[task->getSessionId()] = get_epoch_nanoseconds();
-  }
   /*
 
    // check for response task
@@ -186,34 +181,39 @@ void notifyDone(const std::shared_ptr<Task> &task){
    }
    */
   auto op =  std::dynamic_pointer_cast<OutputTask>(task);
-   if(op){
-     // calc total duration of task; therefore check first, if performance data has been set
-     int64_t work = ! &op->getPerformanceData() ? 0 : op->getPerformanceData().data;
-     // add to total work of session and total work
-     auto ret = _workMap.find(task->getSessionId());
-     if(ret != _workMap.end()){
-       __sync_fetch_and_add(&ret->second, work);
-       _totalWork += work;
-     }
-     else{
-
+  if(op){
+    // calc total duration of task; therefore check first, if performance data has been set
+    int64_t work = ! &op->getPerformanceData() ? 0 : op->getPerformanceData().data;
+    // add to total work of session and total work
+    auto ret = _workMap.find(task->getSessionId());
+    if(ret != _workMap.end()){
+      __sync_fetch_and_add(&ret->second, work);
+      _totalWork += work;
+    }
+    else{
       std::cout << "No matching session found in map\n; " <<  std::endl;
-     }
-     // check if prios need to be updated (TBD - currently after every query)
-     // however, only one thread should update at a time
-     bool expected = false;
-     epoch_t currentTime = get_epoch_nanoseconds();
-     //std::cout << " op finished: " << currentTime << " vs " << _lastUpdatePrios <<  " delta " << currentTime - _lastUpdatePrios << std::endl;
-     if(currentTime - _lastUpdatePrios >= PRIO_UPDATE_INTERVALL){
-       _lastUpdatePrios = currentTime;
-       if(_isUpdatingPrios.compare_exchange_strong(expected,true)){
-         updateDynamicPriorities();
-         _isUpdatingPrios = false;
-       }
-     }
-   }
+    }
+    // check if prios need to be updated (TBD - currently after every query)
+    // however, only one thread should update at a time
+    bool expected = false;
+    epoch_t currentTime = get_epoch_nanoseconds();
+    //std::cout << " op finished: " << currentTime << " vs " << _lastUpdatePrios <<  " delta " << currentTime - _lastUpdatePrios << std::endl;
+    if(currentTime - _lastUpdatePrios >= PRIO_UPDATE_INTERVALL){
+      _lastUpdatePrios = currentTime;
+      if(_isUpdatingPrios.compare_exchange_strong(expected,true)){
+	updateDynamicPriorities();
+	_isUpdatingPrios = false;
+      }
+    }
+    
+    //update activity and avg task size
+    std::lock_guard<std::mutex> lk(_activityMutex);
+    if(task->getSessionId()!= Task::SESSION_ID_NOT_SET)
+      _userActivity[task->getSessionId()] = get_epoch_nanoseconds();
+    _avgTaskSize.add((int)work);
+  }
 }
-
+ 
 void updateDynamicPriorities(){
   std::vector<int64_t> work(_sessions, 0);
   std::vector<std::pair<double, int> > shares(_sessions);
@@ -317,6 +317,8 @@ void updateDynamicPriorities(){
   for(auto i = _sessionMap.begin(); i != _sessionMap.end(); i++){
     std::cout << "\t\tsessionmap: " << i->first << " maps to internal session: " << i->second  << std::endl;
   }
+  
+  std::cout << "Average Task Size " << _avgTaskSize.getAverage()/(int64_t)1000000 << std::endl;
 
 }
 
