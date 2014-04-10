@@ -88,7 +88,7 @@ void Store::merge() {
     _main_pos_list.push_back(i);
   }
   // after a merge, _main is clean again (no updates on row in delta)
-  _main_dirty = true;
+  _main_dirty = false;
 }
 
 

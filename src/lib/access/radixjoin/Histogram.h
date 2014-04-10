@@ -52,18 +52,18 @@ void _executeRadixHashing(storage::c_atable_ptr_t sourceTab,
   size_t column;
   const pos_list_t* pc_pos_list;
 
-  auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(sourceTab);
+  const auto& p = std::dynamic_pointer_cast<const storage::PointerCalculator>(sourceTab);
   if (p) {
     tab = p->getActualTable();
     column = p->getTableColumnForColumn(field);
     pc_pos_list = p->getPositions();
   } else {
     // output of radix join is MutableVerticalTable of PointerCalculators
-    auto mvt = std::dynamic_pointer_cast<const storage::MutableVerticalTable>(sourceTab);
+    const auto& mvt = std::dynamic_pointer_cast<const storage::MutableVerticalTable>(sourceTab);
     if (mvt) {
-      auto pc = mvt->containerAt(field);
-      auto fieldInContainer = mvt->getOffsetInContainer(field);
-      auto p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
+      const auto& pc = mvt->containerAt(field);
+      const auto& fieldInContainer = mvt->getOffsetInContainer(field);
+      const auto& p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
       if (p) {
         tab = p->getActualTable();
         column = p->getTableColumnForColumn(fieldInContainer);
@@ -82,7 +82,7 @@ void _executeRadixHashing(storage::c_atable_ptr_t sourceTab,
     }
   }
 
-  auto store = std::dynamic_pointer_cast<const storage::Store>(tab);
+  const auto& store = std::dynamic_pointer_cast<const storage::Store>(tab);
   if (!store) {
     throw std::runtime_error("Could not cast to store!");
   }
