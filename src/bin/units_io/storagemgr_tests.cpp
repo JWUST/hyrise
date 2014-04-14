@@ -58,6 +58,10 @@ TEST_F(StorageManagerTests, load_table) {
   ASSERT_EQ(0u, sm->getTableNames().size());
 }
 
+TEST_F(StorageManagerTests, load_nonexistent_table) {
+  ASSERT_THROW(sm->getTable("nonexistent"), std::invalid_argument);
+}
+
 TEST_F(StorageManagerTests, load_table_header_data) {
   sm->loadTableFileWithHeader("HEADERDATA", "header/data.tbl", "header/header.data");
 
