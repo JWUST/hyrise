@@ -68,6 +68,9 @@ std::shared_ptr<PlanOperation> TableScan::parse(const Json::Value& data) {
 size_t TableScan::getTotalTableSize() {
   const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
   auto& inputTable = dep->getResultTable();
+  if (!inputTable) {
+    throw std::runtime_error("No input table found.");
+  }
   return inputTable->size();
 }
 
