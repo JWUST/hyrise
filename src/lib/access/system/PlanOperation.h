@@ -56,7 +56,7 @@ class PlanOperation : public OutputTask {
    */
   virtual size_t getTotalTableSize();
   /* determine the b parameter also known as minimal achievable mts */
-  virtual signed int calcMinMts(size_t totalTblSizeIn100k);
+  virtual size_t calcMinMts(size_t totalTblSizeIn100k);
   /* determine the a parameter of the model. */
   virtual size_t calcA(size_t totalTblSizeIn100k);
   /*
@@ -73,7 +73,7 @@ class PlanOperation : public OutputTask {
  public:
   virtual ~PlanOperation();
 
-  virtual size_t determineDynamicCount(size_t maxTaskRunTime);
+  virtual taskscheduler::DynamicCount determineDynamicCount(size_t maxTaskRunTime);
 
   void setLimit(uint64_t l);
   void setProducesPositions(bool p);

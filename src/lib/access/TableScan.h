@@ -19,7 +19,7 @@ class TableScan : public ParallelizablePlanOperation {
   explicit TableScan(std::unique_ptr<AbstractExpression> expr);
   /// Parse TableScan from
   const std::string vname() { return "TableScan"; }
-  virtual std::vector<taskscheduler::task_ptr_t> applyDynamicParallelization(size_t dynamicCount);
+  virtual std::vector<taskscheduler::task_ptr_t> applyDynamicParallelization(taskscheduler::DynamicCount dynamicCount) override;
   static std::shared_ptr<PlanOperation> parse(const Json::Value& data);
 
  protected:

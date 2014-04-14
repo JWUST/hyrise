@@ -26,16 +26,16 @@ namespace access {
 
 size_t PlanOperation::getTotalTableSize() { return 0; }
 
-signed int PlanOperation::calcMinMts(size_t totalTblSizeIn100k) {
+size_t PlanOperation::calcMinMts(size_t totalTblSizeIn100k) {
   return std::trunc(min_mts_a() * totalTblSizeIn100k + min_mts_b());
 }
 
 size_t PlanOperation::calcA(size_t totalTblSizeIn100k) { return std::trunc(a_a() * totalTblSizeIn100k + a_b()); }
 
-size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
+taskscheduler::DynamicCount PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
   // this can never be satisfied. Default to NO parallelization.
   if (maxTaskRunTime == 0) {
-    return 1;
+    return taskscheduler::DynamicCount{1,1,1,1};
   }
 
   auto totalTableSize = getTotalTableSize();
@@ -43,7 +43,7 @@ size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
   // Table is empty or in case of RadixJoin at least one operand is empty.
   // Also if getTotalTableSize() uses default implementation.
   if (totalTableSize == 0) {
-    return 1;
+    return taskscheduler::DynamicCount{1,1,1,1};
   }
 
   size_t totalTblSizeIn100k = std::trunc(totalTableSize / 100000.0);
@@ -51,9 +51,10 @@ size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
   // this is the b of the mts = a / instances + b  model
   auto minMts = calcMinMts(totalTblSizeIn100k);
 
-  if ((signed int)maxTaskRunTime < minMts) {
+  if (maxTaskRunTime < minMts) {
     LOG4CXX_ERROR(logger, planOperationName() << ": Could not honor MTS request. Too small.");
-    return 1024;
+    // TODO should this not be any better number?
+    return taskscheduler::DynamicCount{1024,1024,1024,1024};
   }
 
   auto a = calcA(totalTblSizeIn100k);
@@ -62,7 +63,7 @@ size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
 
   LOG4CXX_DEBUG(logger, planOperationName() << ": tts(in 100k): " << totalTblSizeIn100k << ", numTasks: " << numTasks);
 
-  return numTasks;
+  return taskscheduler::DynamicCount{numTasks, numTasks, numTasks, numTasks};
 }
 
 PlanOperation::~PlanOperation() = default;
