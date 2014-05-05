@@ -6,7 +6,7 @@
 
 #include "access/expressions/AbstractExpression.h"
 #include "helper/types.h"
-#include "storage/FixedLengthVector.h"
+#include "storage/ConcurrentFixedLengthVector.h"
 #include "storage/OrderPreservingDictionary.h"
 #include "storage/storage_types.h"
 

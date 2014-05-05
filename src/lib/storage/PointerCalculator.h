@@ -23,7 +23,6 @@ class PointerCalculator : public AbstractTable, public SharedFactory<PointerCalc
  public:
   PointerCalculator(c_atable_ptr_t t, pos_list_t* pos = nullptr, field_list_t* f = nullptr);
   PointerCalculator(const PointerCalculator& other);
-
   PointerCalculator(c_atable_ptr_t t, pos_list_t pos);
 
   virtual ~PointerCalculator();
@@ -96,13 +95,17 @@ class PointerCalculator : public AbstractTable, public SharedFactory<PointerCalc
   table_id_t subtableCount() const override { return 1; }
   void debugStructure(size_t level = 0) const override;
 
+  void persist_scattered(const pos_list_t& elements, bool new_elements = true) const override {
+    STORAGE_NOT_IMPLEMENTED(RawTable, persist_scattered());
+  }
+
  protected:
   void updateFieldMapping();
 
  private:
   c_atable_ptr_t table;
-  pos_list_t* pos_list;
-  field_list_t* fields;
+  pos_list_t* pos_list = nullptr;
+  field_list_t* fields = nullptr;
 
   // Vector mapping the renaed field names
   std::unique_ptr<std::vector<ColumnMetadata>> _renamed;

@@ -86,6 +86,7 @@ storage::c_ahashtable_ptr_t PlanOperation::getInputHashTable(size_t index) const
 storage::c_ahashtable_ptr_t PlanOperation::getResultHashTable(size_t index) const { return output.getHashTable(index); }
 
 bool PlanOperation::allDependenciesSuccessful() {
+  // FIXME not thread safe.
   for (size_t i = 0; i < _dependencies.size(); ++i) {
     if (std::dynamic_pointer_cast<OutputTask>(_dependencies[i])->getState() == OpFail)
       return false;
@@ -160,7 +161,7 @@ const PlanOperation* PlanOperation::execute() {
   const bool recordPerformance = _performance_attr != nullptr;
 
   // Check if we really need this
-  epoch_t startTime;
+  epoch_t startTime = 0;
   if (recordPerformance)
     startTime = get_epoch_nanoseconds();
 
@@ -206,6 +207,7 @@ void PlanOperation::addInput(storage::c_aresource_ptr_t t) { input.addResource(t
 void PlanOperation::setPlanId(std::string i) { _planId = i; }
 void PlanOperation::setOperatorId(std::string i) { _operatorId = i; }
 
+const std::string& PlanOperation::getOperatorId() { return _operatorId; }
 const std::string& PlanOperation::planOperationName() const { return _planOperationName; }
 void PlanOperation::setPlanOperationName(const std::string& name) { _planOperationName = name; }
 
@@ -216,5 +218,7 @@ void PlanOperation::setResponseTask(const std::shared_ptr<access::ResponseTask>&
 }
 
 std::shared_ptr<access::ResponseTask> PlanOperation::getResponseTask() const { return _responseTask.lock(); }
+
+void PlanOperation::disablePapiTrace() { _papi_disabled = true; }
 }
 }

@@ -13,7 +13,6 @@
 #include "helper/types.h"
 
 #include "storage/Table.h"
-#include "storage/TableFactory.h"
 #include "storage/ColumnMetadata.h"
 #include "storage/AbstractTable.h"
 
@@ -26,14 +25,7 @@ namespace storage {
  * can be any subclass of AbstractTable.
  */
 class MutableVerticalTable : public AbstractTable {
-
  public:
-  MutableVerticalTable(std::vector<std::vector<ColumnMetadata>*> metadata,
-                       std::vector<std::vector<adict_ptr_t>*>* dictionaries = nullptr,
-                       size_t size = 0,
-                       bool sorted = true,
-                       AbstractTableFactory* factory = nullptr,
-                       bool compressed = true);
   MutableVerticalTable(std::vector<atable_ptr_t> cs, size_t size = 0);
   virtual ~MutableVerticalTable();
 
@@ -57,7 +49,8 @@ class MutableVerticalTable : public AbstractTable {
                               bool compressed = false) const override;
   atable_ptr_t copy_structure_modifiable(const field_list_t* fields = nullptr,
                                          size_t initial_size = 0,
-                                         bool with_containers = true) const override;
+                                         bool with_containers = true,
+                                         bool nonvolatile = false) const override;
   atable_ptr_t copy_structure(abstract_dictionary_callback, abstract_attribute_vector_callback) const override;
   table_id_t subtableCount() const override;
   atable_ptr_t copy() const override;
@@ -96,6 +89,8 @@ class MutableVerticalTable : public AbstractTable {
 
   //* Offsets of slices in container
   std::vector<unsigned> slice_offset_in_container;
+
+  void persist_scattered(const pos_list_t& elements, bool new_elements = true) const override;
 };
 }
 }

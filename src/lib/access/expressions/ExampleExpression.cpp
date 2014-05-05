@@ -5,6 +5,7 @@
 
 #include "helper/make_unique.h"
 #include "access/expressions/ExpressionRegistration.h"
+#include "storage/FixedLengthVector.h"
 
 namespace hyrise {
 namespace access {

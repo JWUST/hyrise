@@ -25,7 +25,7 @@ inline std::pair<std::shared_ptr<VectorType>, size_t> _getDataVector(const Table
   return {data, avs.front().attribute_offset};
 }
 
-template <typename VectorType = storage::FixedLengthVector<value_id_t>>
+template <typename VectorType = storage::AbstractFixedLengthVector<value_id_t>>
 inline std::pair<std::shared_ptr<VectorType>, size_t> getFixedDataVector(const storage::c_atable_ptr_t& tab,
                                                                          const size_t column = 0) {
   return _getDataVector<VectorType>(tab, column);
@@ -52,25 +52,21 @@ void _executeRadixHashing(storage::c_atable_ptr_t sourceTab,
   size_t column;
   const pos_list_t* pc_pos_list;
 
-  const auto& p = std::dynamic_pointer_cast<const storage::PointerCalculator>(sourceTab);
-  if (p) {
-    tab = p->getActualTable();
-    column = p->getTableColumnForColumn(field);
-    pc_pos_list = p->getPositions();
+  if (auto pc = std::dynamic_pointer_cast<const storage::PointerCalculator>(sourceTab)) {
+    tab = pc->getActualTable();
+    column = pc->getTableColumnForColumn(field);
+    pc_pos_list = pc->getPositions();
   } else {
     // output of radix join is MutableVerticalTable of PointerCalculators
-    const auto& mvt = std::dynamic_pointer_cast<const storage::MutableVerticalTable>(sourceTab);
-    if (mvt) {
-      const auto& pc = mvt->containerAt(field);
-      const auto& fieldInContainer = mvt->getOffsetInContainer(field);
-      const auto& p = std::dynamic_pointer_cast<const storage::PointerCalculator>(pc);
-      if (p) {
-        tab = p->getActualTable();
-        column = p->getTableColumnForColumn(fieldInContainer);
-        pc_pos_list = p->getPositions();
+    if (auto mvt = std::dynamic_pointer_cast<const storage::MutableVerticalTable>(sourceTab)) {
+      auto container = mvt->containerAt(field);
+      auto fieldInContainer = mvt->getOffsetInContainer(field);
+      if (auto pc = std::dynamic_pointer_cast<const storage::PointerCalculator>(container)) {
+        tab = pc->getActualTable();
+        column = pc->getTableColumnForColumn(fieldInContainer);
+        pc_pos_list = pc->getPositions();
       } else {
         throw std::runtime_error(
-            // TODO put in other comment
             "Radix only supports MutableVerticalTable of PointerCalculators; found other AbstractTable than "
             "PointerCalculator inside MutableVerticalTable.");
       }
