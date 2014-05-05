@@ -110,8 +110,6 @@ std::shared_ptr<storage::AbstractTable> StorageManager::getTable(const std::stri
 
     if (stat(tbl_file.c_str(), &stFileInfo) == 0) {
       loadTableFile(name, name + ".tbl");
-    } else {
-      throw std::invalid_argument("Requested table does not exist!");
     }
   }
   return get<storage::AbstractTable>(name, unsafe);

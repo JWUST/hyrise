@@ -3,6 +3,7 @@
 
 #include <io/shortcuts.h>
 #include <io/StorageManager.h>
+#include <io/ResourceManager.h>
 #include <storage/MutableVerticalTable.h>
 #include "storage/Store.h"
 #include "helper/checked_cast.h"
@@ -61,7 +62,7 @@ TEST_F(StorageManagerTests, load_table) {
 }
 
 TEST_F(StorageManagerTests, load_nonexistent_table) {
-  ASSERT_THROW(sm->getTable("nonexistent"), std::invalid_argument);
+  ASSERT_THROW(sm->getTable("nonexistent"), ResourceNotExistsException);
 }
 
 TEST_F(StorageManagerTests, load_table_header_data) {
