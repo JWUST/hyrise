@@ -1,4 +1,3 @@
-core
 .build/*
 build/*
 test/dump
