@@ -68,15 +68,19 @@ std::shared_ptr<PlanOperation> TableScan::parse(const Json::Value& data) {
 size_t TableScan::getTotalTableSize() {
   const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
   auto& inputTable = dep->getResultTable();
+  if (!inputTable) {
+    throw std::runtime_error("No input table found.");
+  }
   return inputTable->size();
 }
 
-std::vector<taskscheduler::task_ptr_t> TableScan::applyDynamicParallelization(size_t dynamicCount) {
+std::vector<taskscheduler::task_ptr_t> TableScan::applyDynamicParallelization(taskscheduler::DynamicCount dynamicCount) {
 
   std::vector<taskscheduler::task_ptr_t> tasks;
+  size_t degree = dynamicCount.instances;
 
   // if no parallelization is necessary, just return this task again as is
-  if (dynamicCount <= 1) {
+  if (degree <= 1) {
     tasks.push_back(shared_from_this());
     return tasks;
   }
@@ -95,13 +99,13 @@ std::vector<taskscheduler::task_ptr_t> TableScan::applyDynamicParallelization(si
 
   // set part and count for this task as first task
   setPart(0);
-  setCount(dynamicCount);
+  setCount(degree);
   tasks.push_back(std::static_pointer_cast<taskscheduler::Task>(shared_from_this()));
   std::string opIdBase = _operatorId;
   _operatorId = opIdBase + "_0";
 
   // create other TableScans
-  for (size_t i = 1; i < dynamicCount; i++) {
+  for (size_t i = 1; i < degree; i++) {
     auto t = std::make_shared<TableScan>(_expr->clone());
 
     t->setOperatorId(opIdBase + "_" + std::to_string(i));
@@ -109,7 +113,7 @@ std::vector<taskscheduler::task_ptr_t> TableScan::applyDynamicParallelization(si
     // build tabletask
     t->setProducesPositions(producesPositions);
     t->setPart(i);
-    t->setCount(dynamicCount);
+    t->setCount(degree);
     t->setPriority(_priority);
     t->setSessionId(_sessionId);
     t->setPlanId(_planId);

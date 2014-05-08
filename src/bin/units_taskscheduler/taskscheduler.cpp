@@ -53,7 +53,7 @@ TEST_P(SchedulerTest, setScheduler) {
   bool test = (simple_task_scheduler == NULL);
   ASSERT_EQ(test, false);
 
-  SharedScheduler::getInstance().resetScheduler(scheduler_name, getNumberOfCoresOnSystem());
+  SharedScheduler::getInstance().resetScheduler(scheduler_name);
 }
 
 TEST_P(SchedulerTest, wait_task_test) {
@@ -277,7 +277,8 @@ class DynamicDummyTask : public Task {
 // will work properly.
 TEST(DynamicParallelization, mts_0_results_in_degree_1) {
   DynamicDummyTask task;
-  ASSERT_EQ(task.determineDynamicCount(0), 1U);
+  DynamicCount single {1,1,1,1};
+  ASSERT_EQ(task.determineDynamicCount(0), single);
 }
 }
 }  // namespace hyrise::taskscheduler

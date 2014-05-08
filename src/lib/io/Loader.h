@@ -12,7 +12,6 @@ namespace hyrise {
 
 namespace storage {
 class AbstractTable;
-class AbstractTableFactory;
 }  // namespace storage
 
 namespace io {
@@ -33,10 +32,10 @@ class params {
   param_ref_member(AbstractInput, Input);
   /// Header import
   param_ref_member(AbstractHeader, Header);
-  /// Factory for tables
-  param_member(storage::AbstractTableFactory*, Factory);
   /// Base path for imports
   param_member(std::string, BasePath);
+  /// Name for the table to be created
+  param_member(std::string, TableName);
   /// Currently no effect:
   param_member(bool, ModifiableMutableVerticalTable);
   /// Return result without wrapping in Store
@@ -45,6 +44,8 @@ class params {
   param_member(bool, Compressed);
   /// Reference table used for type detection
   param_member(storage::c_atable_ptr_t, ReferenceTable);
+
+  param_member(bool, DeltaDataStructure);
 
  public:
   params();

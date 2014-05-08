@@ -40,8 +40,8 @@ class DynamicTaskQueue : public ThreadLevelQueue<QUEUE> {
           ThreadLevelQueue<QUEUE>::_queuecheck.notify_all();
         } else {
           i->addReadyObserver(ThreadLevelQueue<QUEUE>::shared_from_this());
+          i->unlockForNotifications();
         }
-        i->unlockForNotifications();
       }
     } else {  // task is not dynamic
       _runQueue.push(task);
@@ -54,15 +54,15 @@ class DynamicTaskQueue : public ThreadLevelQueue<QUEUE> {
       task->lockForNotifications();
       if (task->isReady()) {
         task->unlockForNotifications();
-        uint dynamicCount = task->determineDynamicCount(_maxTaskSize);
+        auto dynamicCount = task->determineDynamicCount(_maxTaskSize);
         auto tasks = task->applyDynamicParallelization(dynamicCount);
         for (const auto& i : tasks) {
           ThreadLevelQueue<QUEUE>::schedule(i);
         }
       } else {
         task->addReadyObserver(ThreadLevelQueue<QUEUE>::shared_from_this());
+        task->unlockForNotifications();
       }
-      task->unlockForNotifications();
     } else {
       ThreadLevelQueue<QUEUE>::schedule(task);
     }

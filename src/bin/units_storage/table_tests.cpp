@@ -1,6 +1,8 @@
 // Copyright (c) 2012 Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH. All rights reserved.
 #include "testing/test.h"
 
+#include "helper.h"
+
 #include "io/shortcuts.h"
 
 #include "storage/AbstractTable.h"
@@ -8,10 +10,11 @@
 #include "storage/FixedLengthVector.h"
 #include "storage/OrderIndifferentDictionary.h"
 #include "storage/OrderPreservingDictionary.h"
+#include "storage/ConcurrentUnorderedDictionary.h"
 #include "storage/RawTable.h"
 #include "storage/SimpleStore.h"
-#include "storage/TableGenerator.h"
 #include "storage/storage_types.h"
+#include "storage/Store.h"
 
 namespace hyrise {
 namespace storage {
@@ -59,38 +62,8 @@ TEST_F(TableTests, copy_structure_replacement) {
   hyrise::storage::atable_ptr_t copy = input->copy_structure(order_preserving, b);
   ASSERT_TRUE(std::dynamic_pointer_cast<OrderPreservingDictionary<hyrise_int_t>>(copy->dictionaryAt(0, 0)) != nullptr);
   hyrise::storage::atable_ptr_t copy2 = input->copy_structure(order_indifferent, b);
-  ASSERT_TRUE(std::dynamic_pointer_cast<OrderIndifferentDictionary<hyrise_int_t>>(copy2->dictionaryAt(0, 0)) !=
+  ASSERT_TRUE(std::dynamic_pointer_cast<ConcurrentUnorderedDictionary<hyrise_int_t>>(copy2->dictionaryAt(0, 0)) !=
               nullptr);
-}
-
-
-TEST_F(TableTests, generate_generates_layout) {
-
-  TableGenerator tg;
-  hyrise::storage::atable_ptr_t input = tg.create_empty_table(0, 10);
-  ASSERT_EQ(10u, input->partitionCount());
-
-  std::vector<unsigned> l;
-  l.push_back(3);
-  l.push_back(7);
-
-  input = tg.create_empty_table(0, 10, l);
-  ASSERT_EQ(2u, input->partitionCount());
-
-  l.clear();
-  l.push_back(1);
-  l.push_back(1);
-  l.push_back(1);
-  l.push_back(1);
-  l.push_back(1);
-  l.push_back(1);
-  l.push_back(1);
-  l.push_back(1);
-  l.push_back(1);
-  l.push_back(1);
-
-  input = tg.create_empty_table(0, 10, l);
-  ASSERT_EQ(10u, input->partitionCount());
 }
 
 TEST_F(TableTests, number_of_column) {
@@ -131,8 +104,7 @@ TEST_F(TableTests, bit_compression_test) {
 }
 
 TEST_F(TableTests, test_modifiable_table) {
-  TableGenerator t;
-  hyrise::storage::atable_ptr_t a = t.create_empty_table_modifiable(10, 2);
+  auto a = empty_table(10, 2);
   a->setValue<hyrise_int_t>(0, 0, 100);
   a->setValue<hyrise_int_t>(0, 1, 200);
   ASSERT_EQ(a->getValue<hyrise_int_t>(0, 0), 100);
@@ -141,14 +113,23 @@ TEST_F(TableTests, test_modifiable_table) {
 
 
 TEST_F(TableTests, test_table_copy) {
-  TableGenerator t;
-  hyrise::storage::atable_ptr_t a = t.create_empty_table_modifiable(10, 2);
+  auto a = empty_table(10, 2);
   a->setValue<hyrise_int_t>(0, 0, 100);
   a->setValue<hyrise_int_t>(0, 1, 200);
 
   hyrise::storage::atable_ptr_t b = a->copy();
   b->setValue<hyrise_int_t>(0, 0, 50);
   b->setValue<hyrise_int_t>(0, 1, 100);
+}
+
+TEST_F(TableTests, test_main_storage_is_fixedLengthVector) {
+  hyrise::storage::atable_ptr_t input = io::Loader::shortcuts::load("test/tables/companies.tbl");
+  const auto& store = std::dynamic_pointer_cast<Store>(input);
+  const auto& main = store->getMainTable();
+  const auto& avs = main->getAttributeVectors(0);
+  for (const auto& av : avs) {
+    ASSERT_NE(std::dynamic_pointer_cast<FixedLengthVector<value_id_t>>(av.attribute_vector), nullptr);
+  }
 }
 }
 }

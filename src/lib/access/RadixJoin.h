@@ -18,17 +18,20 @@ class RadixJoin : public PlanOperation {
   uint32_t bits1() const;
   uint32_t bits2() const;
 
-  virtual std::vector<taskscheduler::task_ptr_t> applyDynamicParallelization(size_t dynamicCount);
+  virtual taskscheduler::DynamicCount determineDynamicCount(size_t maxTaskRunTime) override;
+  virtual std::vector<taskscheduler::task_ptr_t> applyDynamicParallelization(taskscheduler::DynamicCount dynamicCount) override;
 
  protected:
   // for determineDynamicCount
   // overridden from PlanOperation
-  virtual size_t getTotalTableSize();
-  virtual size_t calcA(size_t totalTblSizeIn100k);
-  virtual double min_mts_a() { return 0; }
-  virtual double min_mts_b() { return 0; }
+  size_t getTableSize(size_t dep_index);
+  size_t getHashTableSize();
+  size_t getProbeTableSize();
+
   virtual double a_a() { return 0.0858974002969293 / 10; }
   virtual double a_b() { return 1.00479789496181 / 10; }
+  virtual double cluster_a_a() { return 0.0858974002969293 * 253; }
+  virtual double cluster_a_b() { return 1.00479789496181 * 253; }
 
  private:
   uint32_t _bits1;

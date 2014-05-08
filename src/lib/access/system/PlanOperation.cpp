@@ -26,16 +26,16 @@ namespace access {
 
 size_t PlanOperation::getTotalTableSize() { return 0; }
 
-signed int PlanOperation::calcMinMts(size_t totalTblSizeIn100k) {
+size_t PlanOperation::calcMinMts(size_t totalTblSizeIn100k) {
   return std::trunc(min_mts_a() * totalTblSizeIn100k + min_mts_b());
 }
 
 size_t PlanOperation::calcA(size_t totalTblSizeIn100k) { return std::trunc(a_a() * totalTblSizeIn100k + a_b()); }
 
-size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
+taskscheduler::DynamicCount PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
   // this can never be satisfied. Default to NO parallelization.
   if (maxTaskRunTime == 0) {
-    return 1;
+    return taskscheduler::DynamicCount{1,1,1,1};
   }
 
   auto totalTableSize = getTotalTableSize();
@@ -43,7 +43,7 @@ size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
   // Table is empty or in case of RadixJoin at least one operand is empty.
   // Also if getTotalTableSize() uses default implementation.
   if (totalTableSize == 0) {
-    return 1;
+    return taskscheduler::DynamicCount{1,1,1,1};
   }
 
   size_t totalTblSizeIn100k = std::trunc(totalTableSize / 100000.0);
@@ -51,9 +51,10 @@ size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
   // this is the b of the mts = a / instances + b  model
   auto minMts = calcMinMts(totalTblSizeIn100k);
 
-  if ((signed int)maxTaskRunTime < minMts) {
+  if (maxTaskRunTime < minMts) {
     LOG4CXX_ERROR(logger, planOperationName() << ": Could not honor MTS request. Too small.");
-    return 1024;
+    // TODO should this not be any better number?
+    return taskscheduler::DynamicCount{1024,1024,1024,1024};
   }
 
   auto a = calcA(totalTblSizeIn100k);
@@ -62,7 +63,7 @@ size_t PlanOperation::determineDynamicCount(size_t maxTaskRunTime) {
 
   LOG4CXX_DEBUG(logger, planOperationName() << ": tts(in 100k): " << totalTblSizeIn100k << ", numTasks: " << numTasks);
 
-  return numTasks;
+  return taskscheduler::DynamicCount{numTasks, numTasks, numTasks, numTasks};
 }
 
 PlanOperation::~PlanOperation() = default;
@@ -85,6 +86,7 @@ storage::c_ahashtable_ptr_t PlanOperation::getInputHashTable(size_t index) const
 storage::c_ahashtable_ptr_t PlanOperation::getResultHashTable(size_t index) const { return output.getHashTable(index); }
 
 bool PlanOperation::allDependenciesSuccessful() {
+  // FIXME not thread safe.
   for (size_t i = 0; i < _dependencies.size(); ++i) {
     if (std::dynamic_pointer_cast<OutputTask>(_dependencies[i])->getState() == OpFail)
       return false;
@@ -159,7 +161,7 @@ const PlanOperation* PlanOperation::execute() {
   const bool recordPerformance = _performance_attr != nullptr;
 
   // Check if we really need this
-  epoch_t startTime;
+  epoch_t startTime = 0;
   if (recordPerformance)
     startTime = get_epoch_nanoseconds();
 
@@ -205,6 +207,7 @@ void PlanOperation::addInput(storage::c_aresource_ptr_t t) { input.addResource(t
 void PlanOperation::setPlanId(std::string i) { _planId = i; }
 void PlanOperation::setOperatorId(std::string i) { _operatorId = i; }
 
+const std::string& PlanOperation::getOperatorId() { return _operatorId; }
 const std::string& PlanOperation::planOperationName() const { return _planOperationName; }
 void PlanOperation::setPlanOperationName(const std::string& name) { _planOperationName = name; }
 
@@ -215,5 +218,7 @@ void PlanOperation::setResponseTask(const std::shared_ptr<access::ResponseTask>&
 }
 
 std::shared_ptr<access::ResponseTask> PlanOperation::getResponseTask() const { return _responseTask.lock(); }
+
+void PlanOperation::disablePapiTrace() { _papi_disabled = true; }
 }
 }

@@ -139,7 +139,6 @@ void PointerCalculator::setFields(const field_list_t f) {
   updateFieldMapping();
 }
 
-
 const ColumnMetadata& PointerCalculator::metadataAt(const size_t column_index,
                                                     const size_t row_index,
                                                     const table_id_t table_id) const {
@@ -260,11 +259,6 @@ size_t PointerCalculator::getTableRowForRow(const size_t row) const {
   } else {
     actual_row = row;
   }
-  //  // if underlying table is PointerCalculator, resolve recursively
-  //  auto p = std::dynamic_pointer_cast<const PointerCalculator>(table);
-  //  if (p)
-  //    actual_row = p->getTableRowForRow(actual_row);
-  //
   return actual_row;
 }
 

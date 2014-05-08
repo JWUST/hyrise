@@ -42,7 +42,8 @@ TEST(TableScan, testDynamicParallelization) {
   auto ts = std::make_shared<TableScan>(std::move(eq));
   ts->addDependency(fakeTask);
   (*fakeTask)();
-  auto dynamicCount1 = ts->determineDynamicCount(MTS);
+  // TODO should not test instances anymore
+  auto dynamicCount1 = ts->determineDynamicCount(MTS).instances;
 
   auto eq2 = make_unique<EqualsExpression<hyrise_string_t>>(0, 1, "Apple Inc");
   auto resizedTbl2 = tbl->copy_structure();
@@ -53,7 +54,7 @@ TEST(TableScan, testDynamicParallelization) {
   auto ts2 = std::make_shared<TableScan>(std::move(eq2));
   ts2->addDependency(fakeTask2);
   (*fakeTask2)();
-  auto dynamicCount2 = ts2->determineDynamicCount(MTS);
+  auto dynamicCount2 = ts2->determineDynamicCount(MTS).instances;
 
   ASSERT_GT(dynamicCount2, dynamicCount1);
 }
@@ -64,7 +65,8 @@ TEST(TableScan, testDynamicParallelization) {
 TEST(TableScan, test_mts_0_results_in_degree_1) {
   auto eq = make_unique<EqualsExpression<hyrise_string_t>>(0, 1, "Apple Inc");
   TableScan ts(std::move(eq));
-  ASSERT_EQ(ts.determineDynamicCount(0), 1U);
+  taskscheduler::DynamicCount defaultCount{1,1,1,1};
+  ASSERT_EQ(ts.determineDynamicCount(0), defaultCount);
 }
 }
 }
