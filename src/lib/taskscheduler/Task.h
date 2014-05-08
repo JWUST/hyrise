@@ -57,6 +57,24 @@ class TaskDoneObserver : public my_enable_shared_from_this<TaskDoneObserver> {
 };
 
 /*
+ * Used to set the degree of parallelization for dynamically parallelizable
+ * operations. instances is used for all operations but the radix join. The
+ * radix join uses the *_par parameters instead.
+ */
+typedef struct DynamicCount{
+  size_t instances;
+  size_t hash_par;
+  size_t probe_par;
+  size_t join_par;
+  bool operator== (const DynamicCount& rhs) const {
+    return instances == rhs.instances &&
+      hash_par == rhs.hash_par &&
+      probe_par == rhs.probe_par &&
+      join_par == rhs.join_par;
+  }
+} DynamicCount;
+
+/*
  * a task that can be scheduled by a Task Scheduler
  */
 class Task : public TaskDoneObserver, public my_enable_shared_from_this<Task> {
@@ -67,11 +85,14 @@ public:
   static const int NO_PREFERRED_NODE;
   static const int SESSION_ID_NOT_SET;
   // split up the operator in as many instances as indicated by dynamicCount
-  virtual std::vector<task_ptr_t> applyDynamicParallelization(size_t dynamicCount);
+  virtual std::vector<task_ptr_t> applyDynamicParallelization(DynamicCount dynamicCount);
   // determine the number of instances necessary to adhere to a max task size.
   // should be overridden in operators
   // currently all implementing operators are fine-tuned for server gaza.
-  virtual size_t determineDynamicCount(size_t maxTaskRunTime) { return 1; }
+  virtual DynamicCount determineDynamicCount(size_t maxTaskRunTime) {
+    DynamicCount a{1,1,1,1};
+    return a;
+  }
 
  protected:
   std::vector<task_ptr_t> _dependencies;
@@ -80,9 +101,11 @@ public:
 
   int _dependencyWaitCount;
   // mutex for dependencyCount and dependency vector
-  hyrise::locking::Spinlock _depMutex;
-  // mutex for observer vector
-  hyrise::locking::Spinlock _observerMutex;
+  mutable hyrise::locking::Spinlock _depMutex;
+  // mutex for observer vector and _notifiedDoneObservers.
+  mutable hyrise::locking::Spinlock _observerMutex;
+  // indicates if notification of done observers already took place --> task is finised.
+  bool _notifiedDoneObservers = false;
   // mutex to stop notifications, while task is being scheduled to wait set in SimpleTaskScheduler
   // hyrise::locking::Spinlock _notifyMutex;
   // indicates on which core the task should run
@@ -125,6 +148,8 @@ public:
   bool hasSuccessors();
   /*
    * adds dependency; the task is ready to run if all tasks this tasks depends on are finished
+   * If dependency is done, it will not increase the dependencyWaitCount.
+   * This fixes the problem of tasks waiting for their final done notification indefinitely.
    */
   void addDependency(const task_ptr_t& dependency);
   /*
@@ -154,9 +179,50 @@ public:
    */
   void addReadyObserver(const std::shared_ptr<TaskReadyObserver>& observer);
   /*
-   * adds an obserer that gets notified if this task is done
+   * adds an observer that gets notified if this task is done
+   * returns true, if done observer was added since the task was not finished.
+   * returns false, if done observer was not added since the task has already been finished.
    */
-  void addDoneObserver(const std::shared_ptr<TaskDoneObserver>& observer);
+  bool addDoneObserver(const std::shared_ptr<TaskDoneObserver>& observer);
+  /*
+   * Returns all successors of the specified type T.
+   */
+  template <typename T>
+  const std::vector<std::shared_ptr<T>> getAllSuccessorsOf() const {
+    std::vector<std::weak_ptr<TaskDoneObserver>> targets;
+    {
+      std::lock_guard<decltype(_observerMutex)> lk(_observerMutex);
+      targets = _doneObservers;
+    }
+    std::vector<std::shared_ptr<T>> result;
+    for (auto& target : targets) {
+      if (auto successor = target.lock()) {
+        if (auto typedSuccessor = std::dynamic_pointer_cast<T>(successor)) {
+          result.push_back(typedSuccessor);
+        }
+      }
+    }
+    return result;
+  }
+
+  /*
+   * Get first predecessor of type T. Throws exception if none is found.
+   */
+  template <typename T>
+  std::shared_ptr<T> getFirstPredecessorOf() const {
+    std::vector<std::shared_ptr<Task>> targets;
+    {
+      std::lock_guard<decltype(this->_depMutex)> lk(_depMutex);
+      targets = _dependencies;
+    }
+    for (auto target : targets) {
+      if (auto typed_target = std::dynamic_pointer_cast<T>(target)) {
+        return typed_target;
+      }
+    }
+    throw std::runtime_error("Could not find any predecessor of requested type.");
+  }
+
   /*
    * whether this task is ready to run / has open dependencies
    */

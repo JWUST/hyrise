@@ -65,6 +65,7 @@ std::string hash(const std::string& v) {
 }
 
 void RequestParseTask::operator()() {
+  auto opStart = get_epoch_nanoseconds();
   assert((_responseTask != nullptr) && "Response needs to be set");
   std::shared_ptr<hyrise::taskscheduler::AbstractTaskScheduler> scheduler;
   if (_scheduler)
@@ -137,12 +138,21 @@ void RequestParseTask::operator()() {
         result = nullptr;
       }
 
+#ifdef PERSISTENCY_BUFFEREDLOGGER
+      auto group_commit_it = body_data.find("autocommit");
+      bool group_commit = (group_commit_it != body_data.end() && (group_commit_it->second == "true"));
+      _responseTask->setGroupCommit(group_commit);
+#endif
+
       auto autocommit_it = body_data.find("autocommit");
       if (autocommit_it != body_data.end() && (autocommit_it->second == "true")) {
         auto commit = std::make_shared<Commit>();
         commit->setOperatorId("__autocommit");
         commit->setPlanOperationName("Commit");
         commit->addDependency(result);
+#ifdef PERSISTENCY_BUFFEREDLOGGER
+        commit->setFlushLog(!group_commit);
+#endif
         result = commit;
         tasks.push_back(commit);
         _responseTask->setIsAutoCommit(true);
@@ -171,6 +181,11 @@ void RequestParseTask::operator()() {
             _responseTask->addDependency(task);
           }
         }
+#ifdef PERSISTENCY_BUFFEREDLOGGER
+        if (auto commit = std::dynamic_pointer_cast<Commit>(func)) {
+          commit->setFlushLog(!group_commit);
+        }
+#endif
       }
     } else {
       LOG4CXX_ERROR(_logger,
@@ -197,7 +212,7 @@ void RequestParseTask::operator()() {
     if (recordPerformance) {
       *(performance_data.at(0)) = {
           0,                       0,                                                           "NO_PAPI",
-          "RequestParseTask",      "requestParse",                                              _queryStart,
+          "RequestParseTask",      "requestParse",                                              opStart,
           get_epoch_nanoseconds(), boost::lexical_cast<std::string>(std::this_thread::get_id())};
     }
 
@@ -225,7 +240,7 @@ void RequestParseTask::operator()() {
     if (recordPerformance) {
       *(performance_data.at(0)) = {
           0,                       0,                                                           "NO_PAPI",
-          "RequestParseTask",      "requestParse",                                              _queryStart,
+          "RequestParseTask",      "requestParse",                                              opStart,
           get_epoch_nanoseconds(), boost::lexical_cast<std::string>(std::this_thread::get_id())};
     }
     _responseTask->setQueryStart(_queryStart);

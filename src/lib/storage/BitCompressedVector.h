@@ -33,7 +33,7 @@ T maxValueForBits(const std::size_t bits) {
   can only save positive numbers
 */
 template <typename T>
-class BitCompressedVector : public BaseAttributeVector<T> {
+class BitCompressedVector final : public BaseAttributeVector<T> {
   // Typedef for the data
   typedef uint64_t storage_t;
   typedef std::vector<uint64_t> bit_size_list_t;
@@ -71,9 +71,6 @@ class BitCompressedVector : public BaseAttributeVector<T> {
   }
 
   virtual ~BitCompressedVector() { free(_data); }
-
-  void* data() { throw std::runtime_error("Direct data access not allowed"); }
-  void setNumRows(size_t s) { throw std::runtime_error("Direct data access not allowed"); }
 
   T get(size_t column, size_t row) const {
     checkAccess(column, row);
@@ -163,6 +160,7 @@ class BitCompressedVector : public BaseAttributeVector<T> {
 
   size_t size() { return _size; }
 
+  size_t getColumns() const override { return _columns; }
   /*
     Allocate memory for size rows and increase the size of the data
     container to size

@@ -19,4 +19,8 @@ unsigned getNumberOfNodes(hwloc_topology_t topology);
 unsigned getNumberOfCoresPerNumaNode();
 unsigned getNumberOfCoresPerNodeOnSystem();
 std::vector<hwloc_cpuset_t> getCPUSetsForNode(hwloc_topology_t topology, unsigned node);
+unsigned getNumberOfNodes(hwloc_topology_t topology);
+unsigned getNumberOfCoresPerNumaNode();
+void bindCurrentThreadToCore(int core);
+void bindCurrentThreadToNumaNode(int node);
 unsigned getNumberOfNodesOnSystem();

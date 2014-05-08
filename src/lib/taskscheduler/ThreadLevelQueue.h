@@ -60,8 +60,8 @@ protected:
       _queuecheck.notify_all();
     } else {
       task->addReadyObserver(shared_from_this());
+      task->unlockForNotifications();
     }
-    task->unlockForNotifications();
   }
 
   /*

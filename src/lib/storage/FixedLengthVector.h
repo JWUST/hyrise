@@ -17,15 +17,16 @@ template <typename T>
 class AbstractFixedLengthVector : public BaseAttributeVector<T> {
  public:
   virtual const T& getRef(size_t column, size_t row) const = 0;
+  virtual T inc(size_t column, size_t row) = 0;
 };
 
 template <typename T>
-class FixedLengthVector : public AbstractFixedLengthVector<T> {
+class FixedLengthVector final : public AbstractFixedLengthVector<T> {
  public:
   FixedLengthVector(std::size_t columns, std::size_t rows) : _columns(columns), _values(columns * rows) {}
 
   // Increment the value by 1
-  T inc(size_t column, size_t row) {
+  T inc(size_t column, size_t row) override {
     check_access(column, row);
     return _values[row * _columns + column]++;
   }
@@ -56,13 +57,12 @@ class FixedLengthVector : public AbstractFixedLengthVector<T> {
 
   virtual std::uint64_t size() override { return _values.size() / _columns; }
 
-  virtual void setNumRows(std::size_t num) override { NOT_IMPLEMENTED }
+  size_t getColumns() const override { return _columns; }
 
   virtual std::shared_ptr<BaseAttributeVector<T>> copy() override { return std::make_shared<FixedLengthVector>(*this); }
 
   virtual void clear() { _values.clear(); }
   virtual void rewriteColumn(const size_t, const size_t) {}
-  virtual void* data() override { return _values.data(); }
 
  private:
   void check_access(std::size_t columns, std::size_t rows) const {

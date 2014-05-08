@@ -46,16 +46,23 @@ enum class TX_CODE {
 
 namespace access {
 class AbstractExpression;
+class PlanOperation;
+
 typedef std::unique_ptr<AbstractExpression> expression_uptr_t;
+typedef std::shared_ptr<PlanOperation> planop_ptr_t;
 }
 
 namespace storage {
 class SimpleStore;
 class MutableVerticalTable;
 class Store;
+class AbstractAttributeVector;
 
 typedef std::shared_ptr<AbstractResource> aresource_ptr_t;
 typedef std::shared_ptr<const AbstractResource> c_aresource_ptr_t;
+
+typedef std::shared_ptr<AbstractAttributeVector> aattributevector_ptr_t;
+typedef std::shared_ptr<AbstractAttributeVector> c_aattributevector_ptr_t;
 
 typedef std::shared_ptr<AbstractDictionary> adict_ptr_t;
 typedef std::shared_ptr<const AbstractDictionary> c_adict_ptr_t;

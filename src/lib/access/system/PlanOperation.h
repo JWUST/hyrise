@@ -56,7 +56,7 @@ class PlanOperation : public OutputTask {
    */
   virtual size_t getTotalTableSize();
   /* determine the b parameter also known as minimal achievable mts */
-  virtual signed int calcMinMts(size_t totalTblSizeIn100k);
+  virtual size_t calcMinMts(size_t totalTblSizeIn100k);
   /* determine the a parameter of the model. */
   virtual size_t calcA(size_t totalTblSizeIn100k);
   /*
@@ -73,7 +73,7 @@ class PlanOperation : public OutputTask {
  public:
   virtual ~PlanOperation();
 
-  virtual size_t determineDynamicCount(size_t maxTaskRunTime);
+  virtual taskscheduler::DynamicCount determineDynamicCount(size_t maxTaskRunTime);
 
   void setLimit(uint64_t l);
   void setProducesPositions(bool p);
@@ -93,8 +93,13 @@ class PlanOperation : public OutputTask {
 
   void setPlanId(std::string i);
   void setOperatorId(std::string i);
+  const std::string& getOperatorId();
   const std::string& planOperationName() const;
   void setPlanOperationName(const std::string& name);
+
+  void disablePapiTrace();
+
+  virtual std::shared_ptr<PlanOperation> copy() { throw std::runtime_error("Copy not implemented for this operator"); }
 
   virtual void operator()() noexcept;
   virtual const std::string vname();
@@ -122,6 +127,7 @@ class PlanOperation : public OutputTask {
   std::weak_ptr<ResponseTask> _responseTask;
 
   bool producesPositions = true;
+  bool _papi_disabled = false;
 
   std::string _planId;
   std::string _operatorId;

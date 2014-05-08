@@ -20,14 +20,13 @@ log4cxx::LoggerPtr _logger(log4cxx::Logger::getLogger("hyrise.taskscheduler"));
 
 namespace hyrise {
 namespace taskscheduler {
-
   const int Task::DEFAULT_PRIORITY = 999;
   const int Task::HIGH_PRIORITY = 1;
   const int Task::NO_PREFERRED_CORE = -1;
   const int Task::NO_PREFERRED_NODE = -1;
   const int Task::SESSION_ID_NOT_SET = -1;
 
-std::vector<std::shared_ptr<Task>> Task::applyDynamicParallelization(size_t dynamicCount) {
+std::vector<std::shared_ptr<Task>> Task::applyDynamicParallelization(DynamicCount dynamicCount) {
   LOG4CXX_ERROR(_logger, "Dynamic Parallelization has not been implemented for this operator.");
   LOG4CXX_ERROR(_logger, "Running without parallelization.");
   return { my_enable_shared_from_this<Task>::shared_from_this() };
@@ -63,6 +62,7 @@ void Task::notifyDoneObservers() {
   {
     std::lock_guard<decltype(_observerMutex)> lk(_observerMutex);
     targets = _doneObservers;
+    _notifiedDoneObservers = true;
   }
   for (const auto& target : targets) {
     if (auto observer = target.lock()) {
@@ -83,9 +83,11 @@ void Task::addDependency(const task_ptr_t& dependency) {
   {
     std::lock_guard<decltype(_depMutex)> lk(_depMutex);
     _dependencies.push_back(dependency);
+  }
+  if (dependency->addDoneObserver(my_enable_shared_from_this<Task>::shared_from_this())) {  // task was not done
+    std::lock_guard<decltype(_depMutex)> lk(_depMutex);
     ++_dependencyWaitCount;
   }
-  dependency->addDoneObserver(my_enable_shared_from_this<Task>::shared_from_this());
 }
 
 void Task::addDoneDependency(const task_ptr_t& dependency) {
@@ -128,10 +130,15 @@ void Task::addReadyObserver(const std::shared_ptr<TaskReadyObserver>& observer) 
   _readyObservers.push_back(observer);
 }
 
-void Task::addDoneObserver(const std::shared_ptr<TaskDoneObserver>& observer) {
-
+bool Task::addDoneObserver(const std::shared_ptr<TaskDoneObserver>& observer) {
   std::lock_guard<decltype(_observerMutex)> lk(_observerMutex);
-  _doneObservers.push_back(observer);
+  // If this task has not yet notified the done observers / is done
+  if (!_notifiedDoneObservers) {
+    _doneObservers.push_back(observer);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void Task::notifyDone(const task_ptr_t& task) {
