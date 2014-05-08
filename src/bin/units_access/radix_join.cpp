@@ -833,6 +833,7 @@ TEST_F(RadixJoinDynamicParallelizationTest, bigger_probe_par_with_bigger_probe_t
 class RadixApplyDynParallelizationTest : public AccessTest, public ::testing::WithParamInterface<taskscheduler::DynamicCount> {
  protected:
   virtual void SetUp() {
+    AccessTest::SetUp();
     auto companies = std::make_shared<TableLoad>();
     companies->setFileName("tables/companies.tbl");
     companies->setTableName("companies");
