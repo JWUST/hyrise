@@ -37,11 +37,15 @@ void PrefixSum::executePlanOperation() {
   // calculate the prefix sum based on the index and the number of inputs
   // we need to look at to calculate the correct offset
   value_id_t sum = 0;
+  value_id_t prev_sum = 0;
+  std::pair<storage::value_id_t,storage::value_id_t> sum_p(0,0);
   for (size_t i = 0; i < table_size; ++i) {
-    sum += sumForIndex(ivec_size, ivecs, i);
-    ovector->set(0, i, sum + sumForIndexPrev(ivec_size, ivecs, i));
+    
+    sum_p = sumForIndexPair(ivec_size, ivecs, i);
+    sum += i > 0 ? prev_sum : 0;
+    prev_sum = sum_p.second;
+    ovector->set(0, i, sum + sum_p.first);
   }
-
   addResult(output);
 }
 
@@ -64,8 +68,10 @@ storage::value_id_t PrefixSum::sumForIndex(const size_t ivec_size,
                                            const std::vector<vec_ref_t>& ivecs,
                                            const size_t index) const {
   storage::value_id_t sum = 0;
-  for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
-    sum += index > 0 ? ivecs.at(i)->get(0, index - 1) : 0;
+  if(index > 0){
+    for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
+      sum += ivecs[i]->get(0, index - 1);
+    }
   }
   return sum;
 }
@@ -75,8 +81,27 @@ storage::value_id_t PrefixSum::sumForIndexPrev(const size_t ivec_size,
                                                const size_t index) const {
   storage::value_id_t sum = 0;
   for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
-    sum += i < _part ? ivecs.at(i)->get(0, index) : 0;
+    if(i < _part)
+      sum += ivecs[i]->get(0, index);
+    else
+      continue;
   }
+  return sum;
+}
+
+  std::pair<storage::value_id_t,storage::value_id_t> PrefixSum::sumForIndexPair(const size_t ivec_size,
+                                               const std::vector<vec_ref_t>& ivecs,
+                                               const size_t index) const {
+  storage::value_id_t sum1 = 0;
+  storage::value_id_t sum2 = 0;
+  
+  for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
+    if(i < _part)
+      sum1 += ivecs[i]->get(0, index);
+    else
+      sum2 += ivecs[i]->get(0, index);
+  }
+  std::pair<storage::value_id_t,storage::value_id_t> sum(sum1, sum1+sum2);
   return sum;
 }
 
