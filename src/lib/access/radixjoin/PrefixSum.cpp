@@ -30,22 +30,37 @@ void PrefixSum::executePlanOperation() {
   // Build ivector list to avoid lock contention while getting the vectors
   const size_t ivec_size = input.numberOfTables();
   std::vector<vec_ref_t> ivecs;
-  for (size_t i = 0; i < input.numberOfTables(); ++i) {
+  for (size_t i = 0; i < ivec_size; ++i) {
     ivecs.emplace_back(getFixedDataVector(getInputTable(i)).first);
   }
 
   // calculate the prefix sum based on the index and the number of inputs
   // we need to look at to calculate the correct offset
-  value_id_t sum = 0;
-  value_id_t prev_sum = 0;
-  std::pair<storage::value_id_t,storage::value_id_t> sum_p(0,0);
-  for (size_t i = 0; i < table_size; ++i) {
-    
-    sum_p = sumForIndexPair(ivec_size, ivecs, i);
-    sum += i > 0 ? prev_sum : 0;
-    prev_sum = sum_p.second;
-    ovector->set(0, i, sum + sum_p.first);
+  std::vector<value_id_t> vec_all;
+  std::vector<value_id_t> vec_prev;
+  vec_all.resize(table_size);
+  vec_prev.resize(table_size);
+
+  value_id_t v = 0;  
+  for(size_t i = 0; i < ivec_size; ++i){
+    for(size_t j = 0; j < table_size; ++j){
+      v = ivecs[i]->get(0, j);
+      if(i < _part)
+        vec_prev[j] += v;
+      else
+        vec_all[j] += v;
+    }
   }
+
+  //std::pair<storage::value_id_t,storage::value_id_t> sum_p(0,0);
+  //value_id_t prev_sum = 0;
+  value_id_t sum_n = 0;
+  for (size_t i = 0; i < table_size; ++i) {
+    vec_all[i] += vec_prev[i];
+    sum_n += i > 0 ? vec_all[i-1] : 0;
+    ovector->set(0, i, sum_n + vec_prev[i]);
+  }
+
   addResult(output);
 }
 
