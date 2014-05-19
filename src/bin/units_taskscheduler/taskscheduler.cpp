@@ -15,6 +15,9 @@
 
 #include "helper/HwlocHelper.h"
 
+#include <iostream>
+#include <chrono>
+
 
 namespace hyrise {
 namespace taskscheduler {
@@ -27,13 +30,19 @@ using ::testing::ValuesIn;
 // list schedulers to be tested
 std::vector<std::string> getSchedulersToTest() {
   return {
-      "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler",           "CoreBoundQueuesScheduler",
+      "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler",           "ThreadLevelSTDQueuesScheduler", "CoreBoundQueuesScheduler",
+      "WSCoreBoundQueuesScheduler",   "CentralScheduler", "CoreBoundSTDQueuesScheduler",
+      "ThreadPerTaskScheduler",                 "NodeBoundQueuesScheduler",             "WSNodeBoundQueuesScheduler"};
+  }
+ /*
+  return {
+      "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler",           "ThreadLevelSTDQueuesScheduler", "CoreBoundQueuesScheduler",
       "WSCoreBoundQueuesScheduler",       "WSThreadLevelPriorityQueuesScheduler", "ThreadLevelPriorityQueuesScheduler",
       "CoreBoundPriorityQueuesScheduler", "WSCoreBoundPriorityQueuesScheduler",   "CentralScheduler",
       "CentralPriorityScheduler",         "ThreadPerTaskScheduler",               "DynamicPriorityScheduler",
       "DynamicScheduler",                 "NodeBoundQueuesScheduler",             "WSNodeBoundQueuesScheduler",
       "NodeBoundPriorityQueuesScheduler", "WSNodeBoundPriorityQueuesScheduler"};
-}
+}*/
 
 class SchedulerTest : public TestWithParam<std::string> {
  public:
@@ -134,6 +143,42 @@ TEST_P(SchedulerTest, million_dependencies_test) {
   waiter->wait();
 #endif
 }
+
+TEST_P(SchedulerTest, scheduler_performance_test) {
+
+  using std::chrono::duration_cast;
+  using std::chrono::microseconds;  
+  using std::chrono::steady_clock;  
+
+  for(int x = 0; x < 10; x++){
+  // scheduler->resize(threads1);
+
+  int tasks_group1 = 1000000;
+  std::vector<std::shared_ptr<access::NoOp> > vtasks1;
+
+  SharedScheduler::getInstance().resetScheduler(scheduler_name, 22);
+  const auto& scheduler = SharedScheduler::getInstance().getScheduler();
+
+  // scheduler->resize(threads1);
+
+  std::shared_ptr<WaitTask> waiter = std::make_shared<WaitTask>();
+  steady_clock::time_point start = steady_clock::now();
+  for (int i = 0; i < tasks_group1; ++i) {
+    vtasks1.push_back(std::make_shared<access::NoOp>());
+    waiter->addDependency(vtasks1[i]);
+    scheduler->schedule(vtasks1[i]);
+  }
+
+  scheduler->schedule(waiter);
+  waiter->wait();
+  steady_clock::time_point end = steady_clock::now();
+
+  std::cout << "Scheduler " << scheduler_name << " took "
+              // duration_cast is required to avoid accidentally losing precision.
+              << duration_cast<microseconds>(end - start).count()
+              << "us.\n";
+}}
+
 
 TEST_P(SchedulerTest, million_noops_test) {
 #ifdef EXPENSIVE_TESTS

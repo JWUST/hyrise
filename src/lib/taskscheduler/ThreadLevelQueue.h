@@ -6,6 +6,7 @@
 #include "AbstractTaskScheduler.h"
 #include "PriorityQueueType.h"
 #include "BasicQueueType.h"
+#include "STDQueueType.h"
 #include <tbb/concurrent_queue.h>
 #include <atomic>
 
@@ -16,6 +17,7 @@ template <class Queue>
 class ThreadLevelQueue;
 typedef ThreadLevelQueue<PriorityQueueType> ThreadLevelPriorityQueue;
 typedef ThreadLevelQueue<BasicQueueType> ThreadLevelBasicQueue;
+typedef ThreadLevelQueue<STDQueueType> ThreadLevelSTDQueue;
 typedef ThreadLevelQueue<tbb::concurrent_queue<std::shared_ptr<Task>>> TBBThreadLevelQueue;
 
 /*
@@ -53,14 +55,14 @@ class ThreadLevelQueue : public AbstractTaskScheduler,
    * schedule a task for execution
    */
   virtual void schedule(const std::shared_ptr<Task>& task) {
-    task->lockForNotifications();
+    //task->lockForNotifications();
     if (task->isReady()) {
-      task->unlockForNotifications();
+      //task->unlockForNotifications();
       _runQueue.push(task);
       _queuecheck.notify_all();
     } else {
       task->addReadyObserver(shared_from_this());
-      task->unlockForNotifications();
+      //task->unlockForNotifications();
     }
   }
 
@@ -125,11 +127,11 @@ class ThreadLevelQueue : public AbstractTaskScheduler,
       std::shared_ptr<Task> task = nullptr;
       if (_runQueue.try_pop(task)) {
         retries = 0;
-        _blocked = true;
+        //_blocked = true;
         (*task)();
         LOG4CXX_DEBUG(_logger, "Executed task " << task->vname());
         task->notifyDoneObservers();
-        _blocked = false;
+        //_blocked = false;
       } else {
         if (retries++ < 10000) {
           if (retries > 300)

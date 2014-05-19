@@ -10,6 +10,8 @@ namespace {
 bool registered1 =
     SharedScheduler::registerScheduler<CoreBoundPriorityQueuesScheduler>("CoreBoundPriorityQueuesScheduler");
 bool registered2 = SharedScheduler::registerScheduler<CoreBoundBasicQueuesScheduler>("CoreBoundQueuesScheduler");
+
+bool registered3 = SharedScheduler::registerScheduler<CoreBoundSTDQueuesScheduler>("CoreBoundSTDQueuesScheduler");
 }
 }
 }

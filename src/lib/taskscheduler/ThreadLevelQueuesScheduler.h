@@ -14,6 +14,7 @@ template <class QUEUE>
 class ThreadLevelQueuesScheduler;
 typedef ThreadLevelQueuesScheduler<PriorityQueueType> ThreadLevelPriorityQueuesScheduler;
 typedef ThreadLevelQueuesScheduler<BasicQueueType> ThreadLevelBasicQueuesScheduler;
+typedef ThreadLevelQueuesScheduler<STDQueueType> ThreadLevelSTDQueuesScheduler;
 /*
 * 2-Level-Scheduler: This scheduler dispatches tasks to queues,
 * each running a thread for task execution
@@ -43,11 +44,12 @@ class ThreadLevelQueuesScheduler : public AbstractTaskScheduler,
     size_t q = getNextQueue();
     // simple strategy to avoid blocking of queues; check if queue is blocked - try a couple of times, otherwise
     // schedule on next queue
-    size_t retries = 0;
+    //size_t retries = 0;
+    /*
     while (_queues[q]->blocked() && retries < 100) {
       q = getNextQueue();
       ++retries;
-    }
+    }*/
     _queues[q]->schedule(task);
   }
 
@@ -73,13 +75,13 @@ class ThreadLevelQueuesScheduler : public AbstractTaskScheduler,
    * schedule a task for execution
    */
   virtual void schedule(const std::shared_ptr<Task>& task) {
-    task->lockForNotifications();
+    //task->lockForNotifications();
     if (task->isReady()) {
-      task->unlockForNotifications();
+      //task->unlockForNotifications();
       pushToQueue(task);
     } else {
       task->addReadyObserver(shared_from_this());
-      task->unlockForNotifications();
+      //task->unlockForNotifications();
     }
   }
   /*

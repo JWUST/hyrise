@@ -10,6 +10,8 @@ namespace {
 bool registered1 =
     SharedScheduler::registerScheduler<ThreadLevelPriorityQueuesScheduler>("ThreadLevelPriorityQueuesScheduler");
 bool registered2 = SharedScheduler::registerScheduler<ThreadLevelBasicQueuesScheduler>("ThreadLevelQueuesScheduler");
+bool registered3 = SharedScheduler::registerScheduler<ThreadLevelSTDQueuesScheduler>("ThreadLevelSTDQueuesScheduler");
+
 }
 }
 }
