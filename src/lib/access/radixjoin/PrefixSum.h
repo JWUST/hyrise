@@ -17,7 +17,9 @@ class PrefixSum : public ParallelizablePlanOperation {
   void splitInput();
 
  private:
-  typedef std::shared_ptr<storage::AbstractFixedLengthVector<storage::value_id_t>> vec_ref_t;
+  // use finalized type
+  typedef storage::FixedLengthVector<storage::value_id_t> vec_t;
+  typedef std::shared_ptr<vec_t> vec_ref_t;
 };
 
 class MergePrefixSum : public PlanOperation {

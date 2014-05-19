@@ -8,7 +8,8 @@
 #include "io/shortcuts.h"
 #include "access/radixjoin/NestedLoopEquiJoin.h"
 #include "testing/TableEqualityTest.h"
-#include <storage/TableBuilder.h>
+#include "storage/Table.h"
+#include "storage/ColumnMetadata.h"
 #include "access/RadixJoin.h"
 #include "access/storage/TableLoad.h"
 #include "access/Barrier.h"
@@ -17,9 +18,17 @@
 namespace hyrise {
 namespace access {
 
-using storage::TableBuilder;
+class RadixJoinTest : public AccessTest {
 
-class RadixJoinTest : public AccessTest {};
+  public:
+    std::shared_ptr<storage::Table> createOutputTable(const size_t size) {
+      std::vector<storage::ColumnMetadata> meta{storage::ColumnMetadata::metadataFromString(types::integer_name, "count")};
+      auto result = std::make_shared<storage::Table>(&meta, nullptr, size, true, false);
+      result->resize(size);
+      return result;
+    }
+
+};
 
 TEST_F(RadixJoinTest, histogram_parallel_4x) {
 
@@ -157,16 +166,13 @@ TEST_F(RadixJoinTest, check_prefixsum) {
         << result->getValueId(0, i).valueId << " != " << reference->getValue<unsigned int>(0, i) << " at " << i;
 }
 
-TEST_F(RadixJoinTest, check_prefixsum_parallel_p3) {
-  TableBuilder::param_list list;
-  list.append().set_type("INTEGER").set_name("count");
-  auto t1 = TableBuilder::build(list, false);
-  auto t2 = TableBuilder::build(list, false);
-  auto t3 = TableBuilder::build(list, false);
 
-  t1->resize(2);
-  t2->resize(2);
-  t3->resize(2);
+
+TEST_F(RadixJoinTest, check_prefixsum_parallel_p3) {
+  auto t1 = createOutputTable(2);
+  auto t2 = createOutputTable(2);
+  auto t3 = createOutputTable(2);
+
   t1->setValueId(0, 0, {10, 0});
   t1->setValueId(0, 1, {20, 0});
 
@@ -190,15 +196,10 @@ TEST_F(RadixJoinTest, check_prefixsum_parallel_p3) {
 }
 
 TEST_F(RadixJoinTest, check_prefixsum_parallel_p2) {
-  TableBuilder::param_list list;
-  list.append().set_type("INTEGER").set_name("count");
-  auto t1 = TableBuilder::build(list, false);
-  auto t2 = TableBuilder::build(list, false);
-  auto t3 = TableBuilder::build(list, false);
+  auto t1 = createOutputTable(2);
+  auto t2 = createOutputTable(2);
+  auto t3 = createOutputTable(2);
 
-  t1->resize(2);
-  t2->resize(2);
-  t3->resize(2);
   t1->setValueId(0, 0, {10, 0});
   t1->setValueId(0, 1, {20, 0});
 
@@ -222,15 +223,10 @@ TEST_F(RadixJoinTest, check_prefixsum_parallel_p2) {
 }
 
 TEST_F(RadixJoinTest, check_prefixsum_parallel_p1) {
-  TableBuilder::param_list list;
-  list.append().set_type("INTEGER").set_name("count");
-  auto t1 = TableBuilder::build(list, false);
-  auto t2 = TableBuilder::build(list, false);
-  auto t3 = TableBuilder::build(list, false);
+  auto t1 = createOutputTable(2);
+  auto t2 = createOutputTable(2);
+  auto t3 = createOutputTable(2);
 
-  t1->resize(2);
-  t2->resize(2);
-  t3->resize(2);
   t1->setValueId(0, 0, {10, 0});
   t1->setValueId(0, 1, {20, 0});
 
@@ -254,15 +250,10 @@ TEST_F(RadixJoinTest, check_prefixsum_parallel_p1) {
 }
 
 TEST_F(RadixJoinTest, check_prefixsum_parallel_merge) {
-  TableBuilder::param_list list;
-  list.append().set_type("INTEGER").set_name("count");
-  auto t1 = TableBuilder::build(list, false);
-  auto t2 = TableBuilder::build(list, false);
-  auto t3 = TableBuilder::build(list, false);
+  auto t1 = createOutputTable(2);
+  auto t2 = createOutputTable(2);
+  auto t3 = createOutputTable(2);
 
-  t1->resize(2);
-  t2->resize(2);
-  t3->resize(2);
   t1->setValueId(0, 0, {0, 0});
   t1->setValueId(0, 1, {10, 0});
 

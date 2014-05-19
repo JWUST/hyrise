@@ -6,6 +6,8 @@
 
 #include "storage/Table.h"
 
+#include "helper/checked_cast.h"
+
 namespace hyrise {
 namespace access {
 
@@ -25,13 +27,13 @@ void PrefixSum::executePlanOperation() {
   auto output = std::make_shared<storage::Table>(&metadata, nullptr, table_size, true, false);
   output->resize(table_size);
   const auto& oavs = output->getAttributeVectors(0);
-  auto ovector = std::dynamic_pointer_cast<storage::AbstractFixedLengthVector<value_id_t>>(oavs.at(0).attribute_vector);
+  auto ovector = checked_pointer_cast<vec_t>(oavs.at(0).attribute_vector);
 
   // Build ivector list to avoid lock contention while getting the vectors
   const size_t ivec_size = input.numberOfTables();
   std::vector<vec_ref_t> ivecs;
   for (size_t i = 0; i < ivec_size; ++i) {
-    ivecs.emplace_back(getFixedDataVector(getInputTable(i)).first);
+    ivecs.emplace_back(checked_pointer_cast<vec_t>(getFixedDataVector(getInputTable(i)).first));
   }
 
   // calculate the prefix sum based on the index and the number of inputs
@@ -41,7 +43,7 @@ void PrefixSum::executePlanOperation() {
   vec_all.resize(table_size);
   vec_prev.resize(table_size);
 
-  value_id_t v = 0;  
+  value_id_t v = 0;
   for(size_t i = 0; i < ivec_size; ++i){
     for(size_t j = 0; j < table_size; ++j){
       v = ivecs[i]->get(0, j);
