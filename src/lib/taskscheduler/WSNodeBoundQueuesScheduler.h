@@ -37,13 +37,23 @@ class WSNodeBoundQueuesScheduler : virtual public ThreadLevelQueuesScheduler<QUE
   ~WSNodeBoundQueuesScheduler() {};
 
   virtual void init() {
+    int rest = 0;
     // get Number of Nodes
     _queueCount = getNumberOfNodesOnSystem();
+    if(_queueCount > _totalThreads)
+      _queueCount = _totalThreads;
     _threadsPerNode = _totalThreads / _queueCount;
+    rest = _totalThreads % _queueCount;
 
     // create Processor Level Schedulers
     for (size_t i = 0; i < _queueCount; i++) {
-      auto q = createTaskQueue(i, _threadsPerNode);
+      int additional_threads = 0;
+      // distribute the remaining threads, but leave out 0, as it it is reserved for OS or hyrise main thread
+      if(i > 0 && rest > 0){
+        additional_threads = 1;
+        rest--; 
+      }
+      auto q = createTaskQueue(i, _threadsPerNode + additional_threads);
       q->init();
       _queues.push_back(q);
     }
