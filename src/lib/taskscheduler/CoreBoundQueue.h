@@ -55,7 +55,7 @@ class CoreBoundQueue : virtual public ThreadLevelQueue<QUEUE> {
       // the bitmap to modify
       cpuset = hwloc_bitmap_dup(obj->cpuset);
       // remove hyperthreads
-      hwloc_bitmap_singlify(cpuset);
+      // hwloc_bitmap_singlify(cpuset);
       // bind
       if (hwloc_set_thread_cpubind(
               topology, thread->native_handle(), cpuset, HWLOC_CPUBIND_STRICT | HWLOC_CPUBIND_NOMEMBIND)) {
