@@ -77,49 +77,6 @@ const std::string PrefixSum::vname() { return "PrefixSum"; }
 
 void PrefixSum::splitInput() {}
 
-// Calculate the sum for a given index based on all the
-// histograms of the input
-storage::value_id_t PrefixSum::sumForIndex(const size_t ivec_size,
-                                           const std::vector<vec_ref_t>& ivecs,
-                                           const size_t index) const {
-  storage::value_id_t sum = 0;
-  if(index > 0){
-    for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
-      sum += ivecs[i]->get(0, index - 1);
-    }
-  }
-  return sum;
-}
-
-storage::value_id_t PrefixSum::sumForIndexPrev(const size_t ivec_size,
-                                               const std::vector<vec_ref_t>& ivecs,
-                                               const size_t index) const {
-  storage::value_id_t sum = 0;
-  for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
-    if(i < _part)
-      sum += ivecs[i]->get(0, index);
-    else
-      continue;
-  }
-  return sum;
-}
-
-  std::pair<storage::value_id_t,storage::value_id_t> PrefixSum::sumForIndexPair(const size_t ivec_size,
-                                               const std::vector<vec_ref_t>& ivecs,
-                                               const size_t index) const {
-  storage::value_id_t sum1 = 0;
-  storage::value_id_t sum2 = 0;
-  
-  for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
-    if(i < _part)
-      sum1 += ivecs[i]->get(0, index);
-    else
-      sum2 += ivecs[i]->get(0, index);
-  }
-  std::pair<storage::value_id_t,storage::value_id_t> sum(sum1, sum1+sum2);
-  return sum;
-}
-
 namespace {
 auto _2 = QueryParser::registerPlanOperation<MergePrefixSum>("MergePrefixSum");
 }

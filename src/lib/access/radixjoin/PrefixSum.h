@@ -18,15 +18,6 @@ class PrefixSum : public ParallelizablePlanOperation {
 
  private:
   typedef std::shared_ptr<storage::AbstractFixedLengthVector<storage::value_id_t>> vec_ref_t;
-  storage::value_id_t sumForIndex(const size_t ivec_size,
-                                  const std::vector<vec_ref_t>& ivecs,
-                                  const size_t index) const;
-  storage::value_id_t sumForIndexPrev(const size_t ivec_size,
-                                      const std::vector<vec_ref_t>& ivecs,
-                                      const size_t index) const;
-  std::pair<storage::value_id_t,storage::value_id_t> sumForIndexPair(const size_t ivec_size,
-                                      const std::vector<vec_ref_t>& ivecs,
-                                      const size_t index) const;
 };
 
 class MergePrefixSum : public PlanOperation {
