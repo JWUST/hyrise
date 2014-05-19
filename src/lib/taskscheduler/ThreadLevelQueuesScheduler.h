@@ -75,13 +75,13 @@ class ThreadLevelQueuesScheduler : public AbstractTaskScheduler,
    * schedule a task for execution
    */
   virtual void schedule(const std::shared_ptr<Task>& task) {
-    //task->lockForNotifications();
+    task->lockForNotifications();
     if (task->isReady()) {
-      //task->unlockForNotifications();
+      task->unlockForNotifications();
       pushToQueue(task);
     } else {
       task->addReadyObserver(shared_from_this());
-      //task->unlockForNotifications();
+      task->unlockForNotifications();
     }
   }
   /*
