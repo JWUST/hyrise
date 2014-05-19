@@ -31,9 +31,11 @@ using ::testing::ValuesIn;
 std::vector<std::string> getSchedulersToTest() {
   return {
       "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler",           "ThreadLevelSTDQueuesScheduler", "CoreBoundQueuesScheduler",
-      "WSCoreBoundQueuesScheduler",   "CentralScheduler", "CoreBoundSTDQueuesScheduler",
-      "ThreadPerTaskScheduler",                 "NodeBoundQueuesScheduler",             "WSNodeBoundQueuesScheduler"};
-  }
+      "WSCoreBoundQueuesScheduler",      
+   "CentralScheduler",
+          "ThreadPerTaskScheduler",   
+          "NodeBoundQueuesScheduler",             "WSNodeBoundQueuesScheduler"};
+}
  /*
   return {
       "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler",           "ThreadLevelSTDQueuesScheduler", "CoreBoundQueuesScheduler",
@@ -150,34 +152,37 @@ TEST_P(SchedulerTest, scheduler_performance_test) {
   using std::chrono::microseconds;  
   using std::chrono::steady_clock;  
 
-  for(int x = 0; x < 10; x++){
-  // scheduler->resize(threads1);
+  std::vector<int> threads = {1, 2, 4, 8, 16, 31, 63};
+  
+  for(size_t t = 0; t < threads.size(); t++){
+    for(int x = 0; x < 5; x++){
+    // scheduler->resize(threads1);
 
-  int tasks_group1 = 1000000;
-  std::vector<std::shared_ptr<access::NoOp> > vtasks1;
-
-  SharedScheduler::getInstance().resetScheduler(scheduler_name, 22);
-  const auto& scheduler = SharedScheduler::getInstance().getScheduler();
-
-  // scheduler->resize(threads1);
-
-  std::shared_ptr<WaitTask> waiter = std::make_shared<WaitTask>();
-  steady_clock::time_point start = steady_clock::now();
-  for (int i = 0; i < tasks_group1; ++i) {
-    vtasks1.push_back(std::make_shared<access::NoOp>());
-    waiter->addDependency(vtasks1[i]);
-    scheduler->schedule(vtasks1[i]);
+      int tasks_group1 = 1000000;
+      std::vector<std::shared_ptr<access::NoOp> > vtasks1;  
+      SharedScheduler::getInstance().resetScheduler(scheduler_name, threads[t]);
+      const auto& scheduler = SharedScheduler::getInstance().getScheduler();
+  
+      // scheduler->resize(threads1);
+  
+       std::shared_ptr<WaitTask> waiter = std::make_shared<WaitTask>();
+       steady_clock::time_point start = steady_clock::now();
+       for (int i = 0; i < tasks_group1; ++i) {
+         vtasks1.push_back(std::make_shared<access::NoOp>());
+         waiter->addDependency(vtasks1[i]);
+         scheduler->schedule(vtasks1[i]);
+       }
+      
+       scheduler->schedule(waiter);
+       waiter->wait();
+       steady_clock::time_point end = steady_clock::now();
+      
+       std::cout << scheduler_name << "\t" << threads[t] << "\t" // duration_cast is required to avoid accidentally losing precision.
+                   << duration_cast<microseconds>(end - start).count()
+                   << "\n";
+       }
   }
-
-  scheduler->schedule(waiter);
-  waiter->wait();
-  steady_clock::time_point end = steady_clock::now();
-
-  std::cout << "Scheduler " << scheduler_name << " took "
-              // duration_cast is required to avoid accidentally losing precision.
-              << duration_cast<microseconds>(end - start).count()
-              << "us.\n";
-}}
+}
 
 
 TEST_P(SchedulerTest, million_noops_test) {

@@ -140,11 +140,14 @@ int main(int argc, char* argv[]) {
   }
 
 
-  // Bind the program to the first NUMA node for schedulers that have core bound threads
+  // Bind the program to the first NUMA node for schedulers that have core/node bound threads
   // set number of threads to core-count -1
   if ((scheduler_name == "CoreBoundQueuesScheduler") || (scheduler_name == "WSCoreBoundQueuesScheduler") ||
+      (scheduler_name == "NodeBoundQueuesScheduler") || (scheduler_name == "WSNodeBoundQueuesScheduler") ||
       (scheduler_name == "WSCoreBoundPriorityQueuesScheduler") ||
-      (scheduler_name == "CoreBoundPriorityQueuesScheduler")) {
+      (scheduler_name == "CoreBoundPriorityQueuesScheduler") ||
+      (scheduler_name == "WSNodeBoundPriorityQueuesScheduler") ||
+      (scheduler_name == "NodeBoundPriorityQueuesScheduler")){
     bindCurrentThreadToCore(0);
     if (worker_threads == -1)
       worker_threads = getNumberOfCoresOnSystem() - 1;
