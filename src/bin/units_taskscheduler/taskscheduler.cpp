@@ -31,11 +31,7 @@ using ::testing::ValuesIn;
 // list schedulers to be tested
 std::vector<std::string> getSchedulersToTest() {
   return {
-      "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler", "CoreBoundQueuesScheduler",
-      "WSCoreBoundQueuesScheduler",      
-   "CentralScheduler",
-          "ThreadPerTaskScheduler",   
-          "NodeBoundQueuesScheduler",             "WSNodeBoundQueuesScheduler"};
+      "ThreadLevelQueuesScheduler"};
 }
  /*
   return {
@@ -153,11 +149,11 @@ TEST_P(SchedulerTest, scheduler_performance_test) {
   using std::chrono::microseconds;  
   using std::chrono::steady_clock;  
 
-  std::vector<int> threads = {1, 2, 4, 8, 16, 31, 63}; 
-  int total_tasks = 1000000;
+  std::vector<int> threads = {22};//1, 2, 4, 8, 16, 31, 63}; 
+  int total_tasks = 5000000;
 
   for(size_t t = 0; t < threads.size(); t++){
-    for(int x = 0; x < 5; x++){
+    for(int x = 0; x < 1; x++){
     // scheduler->resize(threads1);  
       SharedScheduler::getInstance().resetScheduler(scheduler_name, threads[t]);
       const auto& scheduler = SharedScheduler::getInstance().getScheduler();
@@ -168,9 +164,6 @@ TEST_P(SchedulerTest, scheduler_performance_test) {
       int rest = total_tasks % create_threads;
       std::shared_ptr<WaitTask> waiter = std::make_shared<WaitTask>();
       std::shared_ptr<hyrise::access::SpawnNops> spawnNops;
-
-
-
       for(size_t f = 0; f < create_threads; f++){
         int tasks = task_per_thread;
         if(rest > 0){
@@ -178,8 +171,9 @@ TEST_P(SchedulerTest, scheduler_performance_test) {
           tasks += 1;
         }
         spawnNops = std::make_shared<hyrise::access::SpawnNops>();
-        spawnNops->setNumberOfNops(tasks);
+        // ! set depedency befor creating the nops!
         waiter->addDependency(spawnNops);
+        spawnNops->createNops(tasks);
         vec1.push_back(spawnNops);
       }
       

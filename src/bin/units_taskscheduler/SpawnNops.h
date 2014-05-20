@@ -2,7 +2,8 @@
 #ifndef SRC_LIB_ACCESS_SPAWNPARALLELSUBTASKS_H
 #define SRC_LIB_ACCESS_SPAWNPARALLELSUBTASKS_H
 
-#include "access/system/PlanOperation.h"
+#include "access/NoOp.h"
+
 
 namespace hyrise {
 namespace access {
@@ -15,10 +16,11 @@ class SpawnNops : public PlanOperation {
   static std::shared_ptr<PlanOperation> parse(const Json::Value& data);
   const std::string vname();
 
-  void setNumberOfNops(size_t number);
+  void createNops(size_t number);
 
  private:
   size_t m_numberOfNops;
+  std::vector<std::shared_ptr<NoOp>> _nops;
 };
 }
 }
