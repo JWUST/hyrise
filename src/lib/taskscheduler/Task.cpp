@@ -32,7 +32,6 @@ void Task::lockForNotifications() { _depMutex.lock(); }
 void Task::unlockForNotifications() { _depMutex.unlock(); }
 
 void Task::notifyReadyObservers() {
-  std::cout << vname() << " notifies _readyObservers" << std::endl;
   // Lock and copy observers.
   // This way we do not run any callbacks while holding a lock.
   tbb::concurrent_vector<std::weak_ptr<TaskReadyObserver>> targets;
@@ -120,7 +119,6 @@ bool Task::addDoneObserver(const std::shared_ptr<TaskDoneObserver>& observer) {
 
 void Task::notifyDone(const task_ptr_t& task) {
   int t = --_dependencyWaitCount;
-  std::cout << task->vname() << " " << t << std::endl;
   if (t == 0) {
     if (_preferredCore == NO_PREFERRED_CORE && _preferredNode == NO_PREFERRED_NODE)
       _preferredNode = task->getActualNode();

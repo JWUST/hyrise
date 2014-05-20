@@ -180,7 +180,6 @@ TEST_P(SchedulerTest, scheduler_performance_test) {
         spawnNops->createNops(tasks);
         vec1.push_back(spawnNops);
       }
-      std::cout << "starting test " << std::endl;
       steady_clock::time_point start = steady_clock::now();
       scheduler->schedule(waiter);
       for(size_t f = 0; f < create_threads; f++){
