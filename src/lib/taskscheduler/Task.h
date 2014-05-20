@@ -12,9 +12,11 @@
 #include <memory>
 #include <condition_variable>
 #include <string>
+ #include <atomic>
 
 #include "helper/locking.h"
 #include "helper/types.h"
+#include <tbb/concurrent_vector.h>
 
 #include "taskscheduler/AbstractTaskScheduler.h"
 
@@ -81,17 +83,19 @@ class Task : public TaskDoneObserver, public std::enable_shared_from_this<Task> 
   }
 
  protected:
-  std::vector<task_ptr_t> _dependencies;
-  std::vector<std::weak_ptr<TaskReadyObserver>> _readyObservers;
-  std::vector<std::weak_ptr<TaskDoneObserver>> _doneObservers;
 
-  int _dependencyWaitCount;
+
+  tbb::concurrent_vector<task_ptr_t> _dependencies;
+  tbb::concurrent_vector<std::weak_ptr<TaskReadyObserver>> _readyObservers;
+  tbb::concurrent_vector<std::weak_ptr<TaskDoneObserver>> _doneObservers;
+
+  std::atomic<int> _dependencyWaitCount;
   // mutex for dependencyCount and dependency vector
   mutable hyrise::locking::Spinlock _depMutex;
   // mutex for observer vector and _notifiedDoneObservers.
   mutable hyrise::locking::Spinlock _observerMutex;
   // indicates if notification of done observers already took place --> task is finised.
-  bool _notifiedDoneObservers = false;
+  std::atomic<bool> _notifiedDoneObservers;
   // mutex to stop notifications, while task is being scheduled to wait set in SimpleTaskScheduler
   // hyrise::locking::Spinlock _notifyMutex;
   // indicates on which core the task should run
@@ -146,7 +150,7 @@ class Task : public TaskDoneObserver, public std::enable_shared_from_this<Task> 
   /*
    * removes dependency;
    */
-  void removeDependency(const task_ptr_t& dependency);
+  //void removeDependency(const task_ptr_t& dependency);
   /*
    * change dependency;
    */
@@ -175,11 +179,8 @@ class Task : public TaskDoneObserver, public std::enable_shared_from_this<Task> 
    */
   template <typename T>
   const std::vector<std::shared_ptr<T>> getAllSuccessorsOf() const {
-    std::vector<std::weak_ptr<TaskDoneObserver>> targets;
-    {
-      std::lock_guard<decltype(_observerMutex)> lk(_observerMutex);
-      targets = _doneObservers;
-    }
+    tbb::concurrent_vector<std::weak_ptr<TaskDoneObserver>> targets;
+    targets = _doneObservers;
     std::vector<std::shared_ptr<T>> result;
     for (auto& target : targets) {
       if (auto successor = target.lock()) {
@@ -196,11 +197,8 @@ class Task : public TaskDoneObserver, public std::enable_shared_from_this<Task> 
    */
   template <typename T>
   std::shared_ptr<T> getFirstPredecessorOf() const {
-    std::vector<std::shared_ptr<Task>> targets;
-    {
-      std::lock_guard<decltype(this->_depMutex)> lk(_depMutex);
-      targets = _dependencies;
-    }
+    tbb::concurrent_vector<std::shared_ptr<Task>> targets;
+    targets = _dependencies;
     for (auto target : targets) {
       if (auto typed_target = std::dynamic_pointer_cast<T>(target)) {
         return typed_target;

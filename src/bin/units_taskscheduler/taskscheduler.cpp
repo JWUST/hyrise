@@ -31,11 +31,11 @@ using ::testing::ValuesIn;
 // list schedulers to be tested
 std::vector<std::string> getSchedulersToTest() {
   return {
-      "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler", "CoreBoundQueuesScheduler",
-      "WSCoreBoundQueuesScheduler",      
-   "CentralScheduler",
-          "ThreadPerTaskScheduler",   
-          "NodeBoundQueuesScheduler",             "WSNodeBoundQueuesScheduler"};
+      "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler",           "CoreBoundQueuesScheduler",
+      "WSCoreBoundQueuesScheduler",       
+        "CentralScheduler",
+
+           "NodeBoundQueuesScheduler",             "WSNodeBoundQueuesScheduler"};
 }
  /*
   return {
@@ -154,10 +154,10 @@ TEST_P(SchedulerTest, scheduler_performance_test) {
   using std::chrono::steady_clock;  
 
   std::vector<int> threads = {1, 2, 4, 8, 16, 31, 63}; 
-  int total_tasks = 1000000;
+  int total_tasks = 10000000;
 
   for(size_t t = 0; t < threads.size(); t++){
-    for(int x = 0; x < 5; x++){
+    for(int x = 0; x < 3; x++){
     // scheduler->resize(threads1);  
       SharedScheduler::getInstance().resetScheduler(scheduler_name, threads[t]);
       const auto& scheduler = SharedScheduler::getInstance().getScheduler();
@@ -182,7 +182,7 @@ TEST_P(SchedulerTest, scheduler_performance_test) {
         waiter->addDependency(spawnNops);
         vec1.push_back(spawnNops);
       }
-      
+      std::cout << "starting test " << std::endl;
       steady_clock::time_point start = steady_clock::now();
       scheduler->schedule(waiter);
       for(size_t f = 0; f < create_threads; f++){
@@ -211,7 +211,7 @@ TEST_P(SchedulerTest, million_noops_test) {
   // scheduler->resize(threads1);
 
   std::shared_ptr<WaitTask> waiter = std::make_shared<WaitTask>();
-
+  std::cout << "starting test " << std::endl;
   for (int i = 0; i < tasks_group1; ++i) {
     vtasks1.push_back(std::make_shared<access::NoOp>());
     waiter->addDependency(vtasks1[i]);

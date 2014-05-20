@@ -32,13 +32,11 @@ void Task::lockForNotifications() { _depMutex.lock(); }
 void Task::unlockForNotifications() { _depMutex.unlock(); }
 
 void Task::notifyReadyObservers() {
+  std::cout << vname() << " notifies _readyObservers" << std::endl;
   // Lock and copy observers.
   // This way we do not run any callbacks while holding a lock.
-  std::vector<std::weak_ptr<TaskReadyObserver>> targets;
-  {
-    std::lock_guard<decltype(_observerMutex)> lk(_observerMutex);
-    targets = _readyObservers;
-  }
+  tbb::concurrent_vector<std::weak_ptr<TaskReadyObserver>> targets;
+  targets = _readyObservers;
   for (const auto& target : targets) {
     if (auto observer = target.lock()) {
       observer->notifyReady(shared_from_this());
@@ -49,12 +47,9 @@ void Task::notifyReadyObservers() {
 void Task::notifyDoneObservers() {
   // Lock and copy observers.
   // This way we do not run any callbacks while holding a lock.
-  std::vector<std::weak_ptr<TaskDoneObserver>> targets;
-  {
-    std::lock_guard<decltype(_observerMutex)> lk(_observerMutex);
-    targets = _doneObservers;
-    _notifiedDoneObservers = true;
-  }
+  tbb::concurrent_vector<std::weak_ptr<TaskDoneObserver>> targets;
+  targets = _doneObservers;
+  _notifiedDoneObservers = true;
   for (const auto& target : targets) {
     if (auto observer = target.lock()) {
       observer->notifyDone(shared_from_this());
@@ -64,6 +59,7 @@ void Task::notifyDoneObservers() {
 
 Task::Task()
     : _dependencyWaitCount(0),
+    _notifiedDoneObservers(false),
       _preferredCore(NO_PREFERRED_CORE),
       _preferredNode(NO_PREFERRED_NODE),
       _priority(DEFAULT_PRIORITY),
@@ -71,33 +67,26 @@ Task::Task()
       _id(0) {}
 
 void Task::addDependency(const task_ptr_t& dependency) {
-  {
-    std::lock_guard<decltype(_depMutex)> lk(_depMutex);
-    _dependencies.push_back(dependency);
-  }
+  _dependencies.push_back(dependency);
   if (dependency->addDoneObserver(shared_from_this())) {  // task was not done
-    std::lock_guard<decltype(_depMutex)> lk(_depMutex);
     ++_dependencyWaitCount;
   }
 }
 
 void Task::addDoneDependency(const task_ptr_t& dependency) {
-  {
-    std::lock_guard<decltype(_depMutex)> lk(_depMutex);
-    _dependencies.push_back(dependency);
-  }
+  _dependencies.push_back(dependency);
 }
-
+/*
 void Task::removeDependency(const task_ptr_t& dependency) {
 
   std::lock_guard<decltype(_depMutex)> lk(_depMutex);
   // remove from dependencies
   auto newEnd = std::remove(_dependencies.begin(), _dependencies.end(), dependency);
   if (newEnd != _dependencies.end()) {  // we actually removed something
-    _dependencies.erase(newEnd, _dependencies.end());
+    //_dependencies.erase(newEnd, _dependencies.end());
     --_dependencyWaitCount;
   }
-}
+}*/
 
 void Task::changeDependency(const task_ptr_t& from, const task_ptr_t& to) {
   std::lock_guard<decltype(_depMutex)> lk(_depMutex);
@@ -112,18 +101,14 @@ void Task::changeDependency(const task_ptr_t& from, const task_ptr_t& to) {
 }
 
 bool Task::isDependency(const task_ptr_t& task) {
-  std::lock_guard<decltype(_depMutex)> lk(_depMutex);
   return std::any_of(_dependencies.begin(), _dependencies.end(), [&task](const task_ptr_t& t) { return t == task; });
 }
 
 void Task::addReadyObserver(const std::shared_ptr<TaskReadyObserver>& observer) {
-
-  std::lock_guard<decltype(_observerMutex)> lk(_observerMutex);
   _readyObservers.push_back(observer);
 }
 
 bool Task::addDoneObserver(const std::shared_ptr<TaskDoneObserver>& observer) {
-  std::lock_guard<decltype(_observerMutex)> lk(_observerMutex);
   // If this task has not yet notified the done observers / is done
   if (!_notifiedDoneObservers) {
     _doneObservers.push_back(observer);
@@ -134,10 +119,8 @@ bool Task::addDoneObserver(const std::shared_ptr<TaskDoneObserver>& observer) {
 }
 
 void Task::notifyDone(const task_ptr_t& task) {
-  _depMutex.lock();
   int t = --_dependencyWaitCount;
-  _depMutex.unlock();
-
+  std::cout << task->vname() << " " << t << std::endl;
   if (t == 0) {
     if (_preferredCore == NO_PREFERRED_CORE && _preferredNode == NO_PREFERRED_NODE)
       _preferredNode = task->getActualNode();
