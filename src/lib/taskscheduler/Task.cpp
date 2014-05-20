@@ -32,6 +32,7 @@ void Task::lockForNotifications() { _depMutex.lock(); }
 void Task::unlockForNotifications() { _depMutex.unlock(); }
 
 void Task::notifyReadyObservers() {
+  std::cout << vname() << " notifies _readyObservers" << std::endl;
   // Lock and copy observers.
   // This way we do not run any callbacks while holding a lock.
   tbb::concurrent_vector<std::weak_ptr<TaskReadyObserver>> targets;
@@ -49,7 +50,6 @@ void Task::notifyDoneObservers() {
   _notifiedDoneObservers = true;
   tbb::concurrent_vector<std::weak_ptr<TaskDoneObserver>> targets;
   targets = _doneObservers;
-  
   for (const auto& target : targets) {
     if (auto observer = target.lock()) {
       observer->notifyDone(shared_from_this());
@@ -69,7 +69,6 @@ Task::Task()
 void Task::addDependency(const task_ptr_t& dependency) {
   _dependencies.push_back(dependency);
   if (dependency->addDoneObserver(shared_from_this())) {  // task was not done
-    std::lock_guard<decltype(_depMutex)> lk(_depMutex);
     ++_dependencyWaitCount;
   }
 }
@@ -84,7 +83,7 @@ void Task::removeDependency(const task_ptr_t& dependency) {
   // remove from dependencies
   auto newEnd = std::remove(_dependencies.begin(), _dependencies.end(), dependency);
   if (newEnd != _dependencies.end()) {  // we actually removed something
-    _dependencies.erase(newEnd, _dependencies.end());
+    //_dependencies.erase(newEnd, _dependencies.end());
     --_dependencyWaitCount;
   }
 }*/
@@ -102,7 +101,6 @@ void Task::changeDependency(const task_ptr_t& from, const task_ptr_t& to) {
 }
 
 bool Task::isDependency(const task_ptr_t& task) {
-  //std::lock_guard<decltype(_depMutex)> lk(_depMutex);
   return std::any_of(_dependencies.begin(), _dependencies.end(), [&task](const task_ptr_t& t) { return t == task; });
 }
 
@@ -121,10 +119,8 @@ bool Task::addDoneObserver(const std::shared_ptr<TaskDoneObserver>& observer) {
 }
 
 void Task::notifyDone(const task_ptr_t& task) {
-  _depMutex.lock();
   int t = --_dependencyWaitCount;
-  _depMutex.unlock();
-
+  std::cout << task->vname() << " " << t << std::endl;
   if (t == 0) {
     if (_preferredCore == NO_PREFERRED_CORE && _preferredNode == NO_PREFERRED_NODE)
       _preferredNode = task->getActualNode();

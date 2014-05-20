@@ -85,7 +85,7 @@ class Task : public TaskDoneObserver, public std::enable_shared_from_this<Task> 
   tbb::concurrent_vector<std::weak_ptr<TaskReadyObserver>> _readyObservers;
   tbb::concurrent_vector<std::weak_ptr<TaskDoneObserver>> _doneObservers;
 
-  int _dependencyWaitCount;
+  std::atomic<int> _dependencyWaitCount;
   // mutex for dependencyCount and dependency vector
   mutable hyrise::locking::Spinlock _depMutex;
   // mutex for observer vector and _notifiedDoneObservers.
