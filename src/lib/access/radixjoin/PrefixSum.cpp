@@ -6,6 +6,8 @@
 
 #include "storage/Table.h"
 
+#include "helper/checked_cast.h"
+
 namespace hyrise {
 namespace access {
 
@@ -25,13 +27,13 @@ void PrefixSum::executePlanOperation() {
   auto output = std::make_shared<storage::Table>(&metadata, nullptr, table_size, true, false);
   output->resize(table_size);
   const auto& oavs = output->getAttributeVectors(0);
-  auto ovector = std::dynamic_pointer_cast<storage::AbstractFixedLengthVector<value_id_t>>(oavs.at(0).attribute_vector);
+  auto ovector = checked_pointer_cast<vec_t>(oavs.at(0).attribute_vector);
 
   // Build ivector list to avoid lock contention while getting the vectors
   const size_t ivec_size = input.numberOfTables();
   std::vector<vec_ref_t> ivecs;
   for (size_t i = 0; i < ivec_size; ++i) {
-    ivecs.emplace_back(getFixedDataVector(getInputTable(i)).first);
+    ivecs.emplace_back(checked_pointer_cast<vec_t>(getFixedDataVector(getInputTable(i)).first));
   }
 
   // calculate the prefix sum based on the index and the number of inputs
@@ -41,7 +43,7 @@ void PrefixSum::executePlanOperation() {
   vec_all.resize(table_size);
   vec_prev.resize(table_size);
 
-  value_id_t v = 0;  
+  value_id_t v = 0;
   for(size_t i = 0; i < ivec_size; ++i){
     for(size_t j = 0; j < table_size; ++j){
       v = ivecs[i]->get(0, j);
@@ -76,49 +78,6 @@ std::shared_ptr<PlanOperation> PrefixSum::parse(const Json::Value& data) {
 const std::string PrefixSum::vname() { return "PrefixSum"; }
 
 void PrefixSum::splitInput() {}
-
-// Calculate the sum for a given index based on all the
-// histograms of the input
-storage::value_id_t PrefixSum::sumForIndex(const size_t ivec_size,
-                                           const std::vector<vec_ref_t>& ivecs,
-                                           const size_t index) const {
-  storage::value_id_t sum = 0;
-  if(index > 0){
-    for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
-      sum += ivecs[i]->get(0, index - 1);
-    }
-  }
-  return sum;
-}
-
-storage::value_id_t PrefixSum::sumForIndexPrev(const size_t ivec_size,
-                                               const std::vector<vec_ref_t>& ivecs,
-                                               const size_t index) const {
-  storage::value_id_t sum = 0;
-  for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
-    if(i < _part)
-      sum += ivecs[i]->get(0, index);
-    else
-      continue;
-  }
-  return sum;
-}
-
-  std::pair<storage::value_id_t,storage::value_id_t> PrefixSum::sumForIndexPair(const size_t ivec_size,
-                                               const std::vector<vec_ref_t>& ivecs,
-                                               const size_t index) const {
-  storage::value_id_t sum1 = 0;
-  storage::value_id_t sum2 = 0;
-  
-  for (size_t i = 0, stop = ivec_size; i < stop; ++i) {
-    if(i < _part)
-      sum1 += ivecs[i]->get(0, index);
-    else
-      sum2 += ivecs[i]->get(0, index);
-  }
-  std::pair<storage::value_id_t,storage::value_id_t> sum(sum1, sum1+sum2);
-  return sum;
-}
 
 namespace {
 auto _2 = QueryParser::registerPlanOperation<MergePrefixSum>("MergePrefixSum");
