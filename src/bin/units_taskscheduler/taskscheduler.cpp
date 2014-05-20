@@ -14,6 +14,7 @@
 #include "taskscheduler/WSThreadLevelQueuesScheduler.h"
 
 #include "helper/HwlocHelper.h"
+#include "SpawnNops.h"
 
 #include <iostream>
 #include <chrono>
@@ -30,7 +31,7 @@ using ::testing::ValuesIn;
 // list schedulers to be tested
 std::vector<std::string> getSchedulersToTest() {
   return {
-      "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler",           "ThreadLevelSTDQueuesScheduler", "CoreBoundQueuesScheduler",
+      "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler", "CoreBoundQueuesScheduler",
       "WSCoreBoundQueuesScheduler",      
    "CentralScheduler",
           "ThreadPerTaskScheduler",   
@@ -152,32 +153,45 @@ TEST_P(SchedulerTest, scheduler_performance_test) {
   using std::chrono::microseconds;  
   using std::chrono::steady_clock;  
 
-  std::vector<int> threads = {1, 2, 4, 8, 16, 31, 63};
-  
+  std::vector<int> threads = {1, 2, 4, 8, 16, 31, 63}; 
+  int total_tasks = 1000000;
+
   for(size_t t = 0; t < threads.size(); t++){
     for(int x = 0; x < 5; x++){
-    // scheduler->resize(threads1);
-
-      int tasks_group1 = 1000000;
-      std::vector<std::shared_ptr<access::NoOp> > vtasks1;  
+    // scheduler->resize(threads1);  
       SharedScheduler::getInstance().resetScheduler(scheduler_name, threads[t]);
       const auto& scheduler = SharedScheduler::getInstance().getScheduler();
-  
-      // scheduler->resize(threads1);
-  
-       std::shared_ptr<WaitTask> waiter = std::make_shared<WaitTask>();
-       steady_clock::time_point start = steady_clock::now();
-       for (int i = 0; i < tasks_group1; ++i) {
-         vtasks1.push_back(std::make_shared<access::NoOp>());
-         waiter->addDependency(vtasks1[i]);
-         scheduler->schedule(vtasks1[i]);
-       }
+
+      int create_threads = threads[t] > 1 ? threads[t]/2 : threads[t];
+      std::vector<std::shared_ptr<hyrise::access::SpawnNops>> vec1;
+      int task_per_thread = total_tasks/create_threads;
+      int rest = total_tasks % create_threads;
+      std::shared_ptr<WaitTask> waiter = std::make_shared<WaitTask>();
+      std::shared_ptr<hyrise::access::SpawnNops> spawnNops;
+
+
+
+      for(size_t f = 0; f < create_threads; f++){
+        int tasks = task_per_thread;
+        if(rest > 0){
+          rest--;
+          tasks += 1;
+        }
+        spawnNops = std::make_shared<hyrise::access::SpawnNops>();
+        spawnNops->setNumberOfNops(tasks);
+        waiter->addDependency(spawnNops);
+        vec1.push_back(spawnNops);
+      }
       
-       scheduler->schedule(waiter);
-       waiter->wait();
-       steady_clock::time_point end = steady_clock::now();
+      steady_clock::time_point start = steady_clock::now();
+      scheduler->schedule(waiter);
+      for(size_t f = 0; f < create_threads; f++){
+        scheduler->schedule(vec1[f]);
+      }
+      waiter->wait();
+      steady_clock::time_point end = steady_clock::now();
       
-       std::cout << scheduler_name << "\t" << threads[t] << "\t" // duration_cast is required to avoid accidentally losing precision.
+      std::cout << scheduler_name << "\t" << threads[t] << "\t" // duration_cast is required to avoid accidentally losing precision.
                    << duration_cast<microseconds>(end - start).count()
                    << "\n";
        }
