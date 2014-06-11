@@ -21,6 +21,7 @@ auto _ = QueryParser::registerPlanOperation<RadixJoin>("RadixJoin");
 log4cxx::LoggerPtr _logger(log4cxx::Logger::getLogger("hyrise.access"));
 }
 
+// Used to cap the hash_par and join_par degree
 const size_t RadixJoin::MaxParallelizationDegree;
 
 void RadixJoin::executePlanOperation() {}
@@ -236,15 +237,15 @@ taskscheduler::DynamicCount RadixJoin::determineDynamicCount(size_t maxTaskRunTi
   size_t hashTblSizeIn100k = std::trunc(hashTableSize / 100000.0);
   auto hash_a = std::trunc(cluster_a_a() * hashTblSizeIn100k + cluster_a_b());
   size_t hash_par = std::max(1, static_cast<int>(round(hash_a / maxTaskRunTime)));
-  if (hash_par > 100) {
-    hash_par = 100;
+  if (hash_par > MaxParallelizationDegree) {
+    hash_par = MaxParallelizationDegree;
   }
 
   size_t probeTblSizeIn100k = std::trunc(probeTableSize / 100000.0);
   auto probe_a = std::trunc(cluster_a_a() * probeTblSizeIn100k + cluster_a_b());
   size_t probe_par = std::max(1, static_cast<int>(round(probe_a / maxTaskRunTime)));
-  if (probe_par > 100) {
-    probe_par = 100;
+  if (probe_par > MaxParallelizationDegree) {
+    probe_par = MaxParallelizationDegree;
   }
 
   size_t totalTblSizeIn100k = std::trunc(totalTableSize / 100000.0);
