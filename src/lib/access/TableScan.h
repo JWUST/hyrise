@@ -19,6 +19,7 @@ class TableScan : public ParallelizablePlanOperation {
   explicit TableScan(std::unique_ptr<AbstractExpression> expr);
   /// Parse TableScan from
   const std::string vname() { return "TableScan"; }
+  virtual taskscheduler::DynamicCount determineDynamicCount(size_t maxTaskRunTime);
   virtual std::vector<taskscheduler::task_ptr_t> applyDynamicParallelization(taskscheduler::DynamicCount dynamicCount) override;
   static std::shared_ptr<PlanOperation> parse(const Json::Value& data);
 
@@ -26,15 +27,13 @@ class TableScan : public ParallelizablePlanOperation {
   void setupPlanOperation();
   void executePlanOperation();
 
-  // for determineDynamicCount
-  virtual size_t getTotalTableSize();
-  virtual double min_mts_a() { return 0; }
-  virtual double min_mts_b() { return 0; }
-  virtual double a_a() { return 26.3713473453079 / 7; }
-  virtual double a_b() { return 211.089319452433 / 7; }
-
  private:
   std::unique_ptr<AbstractExpression> _expr;
+
+  // parameters for MTS model
+  double _a = 4.01879860e-01;
+  double _b = 3.21264964e-05;
+  double _c = 2.14619448e-01;
 };
 }
 }

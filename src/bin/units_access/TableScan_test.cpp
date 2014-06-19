@@ -63,10 +63,20 @@ TEST(TableScan, testDynamicParallelization) {
 // results in a degree of 1. This ensures that applyDynamicParallelization
 // will work properly.
 TEST(TableScan, test_mts_0_results_in_degree_1) {
+  auto fakeTask = std::make_shared<Barrier>();
+  auto tbl = io::Loader::shortcuts::load("test/tables/companies.tbl");
+  fakeTask->addInput(tbl);
+  fakeTask->addField(0);
+  (*fakeTask)();
+
   auto eq = make_unique<EqualsExpression<hyrise_string_t>>(0, 1, "Apple Inc");
-  TableScan ts(std::move(eq));
-  taskscheduler::DynamicCount defaultCount{1,1,1,1};
-  ASSERT_EQ(ts.determineDynamicCount(0), defaultCount);
+  // Has to be a make_shared, otherwise the shared_from_this in addDependency
+  // will fail with a bad_weak_ptr exception
+  auto ts = std::make_shared<TableScan>(std::move(eq));
+  ts->addDependency(fakeTask);
+
+  taskscheduler::DynamicCount defaultCount{1,0,0,0};
+  ASSERT_EQ(ts->determineDynamicCount(0), defaultCount);
 }
 }
 }
