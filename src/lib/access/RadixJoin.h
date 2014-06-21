@@ -33,9 +33,10 @@ class RadixJoin : public PlanOperation {
   double _cluster_a = 3.59397494e+01;
   double _cluster_b = -3.78947920e-03;
   double _cluster_c = 5.05182902e-02;
-  double _join_a = 0.06736469;
-  double _join_b = -0.01299909;
-  double _join_c = 8.30758764;
+  double _join_a = 2.50010360e-01;
+  double _join_b = 5.59605419e-03;
+  double _join_c = 6.33123046e+00;
+  double _join_d = 2.96583603e+00;
 
   uint32_t _bits1;
   uint32_t _bits2;

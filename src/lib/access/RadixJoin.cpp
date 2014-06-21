@@ -242,7 +242,7 @@ taskscheduler::DynamicCount RadixJoin::determineDynamicCount(size_t maxTaskRunTi
 
   // The overall work is based on probe and hash table sizes
   // The overhead per instances is based on just the probe table size
-  auto join_instances = (_join_a * pow(probeTableSize + hashTableSize, 2)) / (maxTaskRunTime - _join_b * probeTableSize - _join_c);
+  auto join_instances = (probeTableSize * (_join_d + _join_a * hashTableSize)) / (maxTaskRunTime - _join_b * probeTableSize - _join_c);
   size_t join_par = std::max(1, static_cast<int>(round(join_instances)));
 
   return taskscheduler::DynamicCount{1, hash_par, probe_par, join_par};
