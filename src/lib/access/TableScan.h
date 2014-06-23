@@ -31,9 +31,9 @@ class TableScan : public ParallelizablePlanOperation {
   std::unique_ptr<AbstractExpression> _expr;
 
   // parameters for MTS model
-  double _a = 4.01879860e-01;
-  double _b = 3.21264964e-05;
-  double _c = 2.14619448e-01;
+  double _a = 3.85258544e-01;
+  double _b = -7.00891666e-05;
+  double _c = 2.91533506e-01;
 };
 }
 }

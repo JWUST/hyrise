@@ -30,9 +30,9 @@ class RadixJoin : public PlanOperation {
 
  private:
   // Used for fitting model
-  double _cluster_a = 3.59397494e+01;
-  double _cluster_b = -3.78947920e-03;
-  double _cluster_c = 5.05182902e-02;
+  double _cluster_a = 1.77726657e+01;
+  double _cluster_b = -2.20481624e-03;
+  double _cluster_c = 7.40603624e+00;
   double _join_a = 2.50010360e-01;
   double _join_b = 5.59605419e-03;
   double _join_c = 6.33123046e+00;
