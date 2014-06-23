@@ -40,7 +40,7 @@ class RadixJoin : public PlanOperation {
 
   uint32_t _bits1;
   uint32_t _bits2;
-  static const size_t MaxParallelizationDegree = 400;
+  static const size_t MaxParallelizationDegree = 200;
 
   void distributePartitions(const int partitions, const int join_count, const int current_join, int& first, int& last)
       const;
