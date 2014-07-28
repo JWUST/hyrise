@@ -53,7 +53,6 @@ class Table : public AbstractTable {
         size_t initial_size = 0,
         bool sorted = true,
         bool compressed = true,
-        bool nonvolatile = false,
         const std::string& tableName = "")
   __attribute__((deprecated("Use Table(meta, attrv, vector-of-dicts instead)")));
 
@@ -82,14 +81,13 @@ class Table : public AbstractTable {
                                    const size_t row_index = 0,
                                    const table_id_t table_id = 0) const override;
 
-  virtual const AbstractTable::SharedDictionaryPtr& dictionaryAt(const size_t column,
-                                                                 const size_t row = 0,
-                                                                 const table_id_t table_id = 0) const override;
+  virtual const adict_ptr_t& dictionaryAt(const size_t column,
+                                          const size_t row = 0,
+                                          const table_id_t table_id = 0) const override;
 
-  virtual const AbstractTable::SharedDictionaryPtr& dictionaryByTableId(const size_t column,
-                                                                        const table_id_t table_id) const override;
+  virtual const adict_ptr_t& dictionaryByTableId(const size_t column, const table_id_t table_id) const override;
 
-  virtual void setDictionaryAt(AbstractTable::SharedDictionaryPtr dict,
+  virtual void setDictionaryAt(adict_ptr_t dict,
                                const size_t column,
                                const size_t row = 0,
                                const table_id_t table_id = 0) override;
@@ -102,8 +100,7 @@ class Table : public AbstractTable {
 
   virtual atable_ptr_t copy_structure_modifiable(const field_list_t* fields = nullptr,
                                                  const size_t initial_size = 0,
-                                                 const bool with_containers = true,
-                                                 bool nonvolatile = false) const override;
+                                                 const bool with_containers = true) const override;
   virtual atable_ptr_t copy_structure(abstract_dictionary_callback, abstract_attribute_vector_callback) const override;
 
   unsigned partitionCount() const override { return 1; }

@@ -85,18 +85,16 @@ class Store : public AbstractTable {
                                    const size_t row_index = 0,
                                    const table_id_t table_id = 0) const override;
 
-  void setDictionaryAt(AbstractTable::SharedDictionaryPtr dict, size_t column, size_t row = 0, table_id_t table_id = 0)
-      override;
-  const AbstractTable::SharedDictionaryPtr& dictionaryAt(size_t column, size_t row = 0, table_id_t table_id = 0) const
-      override;
-  const AbstractTable::SharedDictionaryPtr& dictionaryByTableId(size_t column, table_id_t table_id) const override;
+  void setDictionaryAt(adict_ptr_t dict, size_t column, size_t row = 0, table_id_t table_id = 0) override;
+  const adict_ptr_t& dictionaryAt(size_t column, size_t row = 0, table_id_t table_id = 0) const override;
+  const adict_ptr_t& dictionaryByTableId(size_t column, table_id_t table_id) const override;
   ValueId getValueId(size_t column, size_t row) const override;
   void setValueId(size_t column, size_t row, ValueId vid) override;
   size_t size() const override;
   size_t columnCount() const override;
   unsigned partitionCount() const override;
   size_t partitionWidth(size_t slice) const override;
-  void print(size_t limit = (size_t) - 1, size_t offset = 0) const;
+  void print(size_t limit = (size_t) - 1) const override;
   table_id_t subtableCount() const override { return 2; }
   atable_ptr_t copy() const override;
   const attr_vectors_t getAttributeVectors(size_t column) const override;

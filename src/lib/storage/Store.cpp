@@ -177,10 +177,7 @@ const ColumnMetadata& Store::metadataAt(const size_t column_index,
   return delta->metadataAt(column_index, row_index - offset, table_id);
 }
 
-void Store::setDictionaryAt(AbstractTable::SharedDictionaryPtr dict,
-                            const size_t column,
-                            const size_t row,
-                            const table_id_t table_id) {
+void Store::setDictionaryAt(adict_ptr_t dict, const size_t column, const size_t row, const table_id_t table_id) {
   size_t offset = _main_table->size();
   if (row < offset) {
     _main_table->setDictionaryAt(dict, column, row, table_id);
@@ -188,9 +185,7 @@ void Store::setDictionaryAt(AbstractTable::SharedDictionaryPtr dict,
   delta->setDictionaryAt(dict, column, row - offset, table_id);
 }
 
-const AbstractTable::SharedDictionaryPtr& Store::dictionaryAt(const size_t column,
-                                                              const size_t row,
-                                                              const table_id_t table_id) const {
+const adict_ptr_t& Store::dictionaryAt(const size_t column, const size_t row, const table_id_t table_id) const {
   size_t offset = _main_table->size();
   if (row < offset) {
     return _main_table->dictionaryAt(column, row);
@@ -198,8 +193,7 @@ const AbstractTable::SharedDictionaryPtr& Store::dictionaryAt(const size_t colum
   return delta->dictionaryAt(column, row - offset);
 }
 
-const AbstractTable::SharedDictionaryPtr& Store::dictionaryByTableId(const size_t column,
-                                                                     const table_id_t table_id) const {
+const adict_ptr_t& Store::dictionaryByTableId(const size_t column, const table_id_t table_id) const {
   if (table_id == 0)
     return _main_table->dictionaryByTableId(column, table_id);
   else
@@ -239,9 +233,7 @@ unsigned Store::partitionCount() const { return _main_table->partitionCount(); }
 size_t Store::partitionWidth(const size_t slice) const { return _main_table->partitionWidth(slice); }
 
 
-void Store::print(const size_t limit, const size_t offset) const {
-  PrettyPrinter::print(this, std::cout, "Store:" + _name, limit, offset);
-}
+void Store::print(const size_t limit) const { PrettyPrinter::print(this, std::cout, "Store:" + _name, limit, 0); }
 
 void Store::setMerger(TableMerger* _merger) {
   delete merger;
