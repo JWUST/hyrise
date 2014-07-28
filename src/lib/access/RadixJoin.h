@@ -28,15 +28,19 @@ class RadixJoin : public PlanOperation {
   size_t getHashTableSize();
   size_t getProbeTableSize();
 
-  virtual double a_a() { return 0.0858974002969293 / 10; }
-  virtual double a_b() { return 1.00479789496181 / 10; }
-  virtual double cluster_a_a() { return 0.0858974002969293 * 253; }
-  virtual double cluster_a_b() { return 1.00479789496181 * 253; }
-
  private:
+  // Used for fitting model
+  double _cluster_a = 1.77726657e+01;
+  double _cluster_b = -2.20481624e-03;
+  double _cluster_c = 7.40603624e+00;
+  double _join_a = 2.50010360e-01;
+  double _join_b = 5.59605419e-03;
+  double _join_c = 6.33123046e+00;
+  double _join_d = 2.96583603e+00;
+
   uint32_t _bits1;
   uint32_t _bits2;
-  static const size_t MaxParallelizationDegree = 24;
+  static const size_t MaxParallelizationDegree = 200;
 
   void distributePartitions(const int partitions, const int join_count, const int current_join, int& first, int& last)
       const;

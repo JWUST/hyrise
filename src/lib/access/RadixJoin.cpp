@@ -12,6 +12,7 @@
 #include "access/radixjoin/RadixCluster.h"
 #include "helper/types.h"
 #include "log4cxx/logger.h"
+#include <math.h>
 
 namespace hyrise {
 namespace access {
@@ -21,6 +22,7 @@ auto _ = QueryParser::registerPlanOperation<RadixJoin>("RadixJoin");
 log4cxx::LoggerPtr _logger(log4cxx::Logger::getLogger("hyrise.access"));
 }
 
+// Used to cap the hash_par and join_par degree
 const size_t RadixJoin::MaxParallelizationDegree;
 
 void RadixJoin::executePlanOperation() {}
@@ -223,35 +225,25 @@ taskscheduler::DynamicCount RadixJoin::determineDynamicCount(size_t maxTaskRunTi
     return taskscheduler::DynamicCount{1,1,1,1};
   }
 
-  auto hashTableSize = getHashTableSize();
-  auto probeTableSize = getProbeTableSize();
-  auto totalTableSize = hashTableSize + probeTableSize;
+  auto hashTableSize = getHashTableSize() / (double) 100000;
+  auto probeTableSize = getProbeTableSize() / (double) 100000;
 
-  // At least one operand is empty.
-  // Default to no parallelization
-  if (totalTableSize == 0) {
-    return taskscheduler::DynamicCount{1,1,1,1};
+  auto hash_instances = (_cluster_a * hashTableSize) / (maxTaskRunTime - _cluster_b * hashTableSize - _cluster_c);
+  size_t hash_par = std::max(1, static_cast<int>(round(hash_instances)));
+  if (hash_par > MaxParallelizationDegree) {
+    hash_par = MaxParallelizationDegree;
   }
 
-  size_t hashTblSizeIn100k = std::trunc(hashTableSize / 100000.0);
-  auto hash_a = std::trunc(cluster_a_a() * hashTblSizeIn100k + cluster_a_b());
-  size_t hash_par = std::max(1, static_cast<int>(round(hash_a / maxTaskRunTime)));
-  if (hash_par > 100) {
-    hash_par = 100;
+  auto probe_instances = (_cluster_a * probeTableSize) / (maxTaskRunTime - _cluster_b * probeTableSize - _cluster_c);
+  size_t probe_par = std::max(1, static_cast<int>(round(probe_instances)));
+  if (probe_par > MaxParallelizationDegree) {
+    probe_par = MaxParallelizationDegree;
   }
 
-  size_t probeTblSizeIn100k = std::trunc(probeTableSize / 100000.0);
-  auto probe_a = std::trunc(cluster_a_a() * probeTblSizeIn100k + cluster_a_b());
-  size_t probe_par = std::max(1, static_cast<int>(round(probe_a / maxTaskRunTime)));
-  if (probe_par > 100) {
-    probe_par = 100;
-  }
-
-  size_t totalTblSizeIn100k = std::trunc(totalTableSize / 100000.0);
-  auto a = std::trunc(a_a() * std::pow(totalTblSizeIn100k, 2) + a_b());
-  size_t join_par = std::max(1, static_cast<int>(round(a / maxTaskRunTime)));
-
-  LOG4CXX_DEBUG(_logger, planOperationName() << ": tts(in 100k): " << totalTblSizeIn100k << ", hash_par: " << hash_par << ", probe_par: " << probe_par << ", join_par: " << join_par);
+  // The overall work is based on probe and hash table sizes
+  // The overhead per instances is based on just the probe table size
+  auto join_instances = (probeTableSize * (_join_d + _join_a * hashTableSize)) / (maxTaskRunTime - _join_b * probeTableSize - _join_c);
+  size_t join_par = std::max(1, static_cast<int>(round(join_instances)));
 
   return taskscheduler::DynamicCount{1, hash_par, probe_par, join_par};
 }

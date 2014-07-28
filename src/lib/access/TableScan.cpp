@@ -65,13 +65,19 @@ std::shared_ptr<PlanOperation> TableScan::parse(const Json::Value& data) {
   return std::make_shared<TableScan>(Expressions::parse(data["expression"].asString(), data));
 }
 
-size_t TableScan::getTotalTableSize() {
+taskscheduler::DynamicCount TableScan::determineDynamicCount(size_t maxTaskRunTime){
   const auto& dep = std::dynamic_pointer_cast<PlanOperation>(_dependencies[0]);
   auto& inputTable = dep->getResultTable();
   if (!inputTable) {
     throw std::runtime_error("No input table found.");
   }
-  return inputTable->size();
+  auto tblsize = inputTable->size() / (double) 100000;
+
+  // this is the model solved for variable "instances"
+  size_t instances = static_cast<int>(round((_a * tblsize) / (maxTaskRunTime - _b * tblsize - _c)));
+
+  taskscheduler::DynamicCount count{ std::max((size_t) 1, instances), 0, 0, 0};
+  return count;
 }
 
 std::vector<taskscheduler::task_ptr_t> TableScan::applyDynamicParallelization(taskscheduler::DynamicCount dynamicCount) {
