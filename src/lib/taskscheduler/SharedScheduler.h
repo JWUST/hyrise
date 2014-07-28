@@ -71,7 +71,9 @@ class SharedScheduler {
       _sharedScheduler->init();
       if (auto dynamicScheduler = std::dynamic_pointer_cast<DynamicTaskPriorityQueue>(_sharedScheduler)) {
         dynamicScheduler->setMaxTaskSize(maxTaskSize);
-      }
+      } else if (auto dynamicScheduler = std::dynamic_pointer_cast<DynamicTaskBasicQueue>(_sharedScheduler)) {
+	dynamicScheduler->setMaxTaskSize(maxTaskSize);
+      } 
     } else
       throw SchedulerException("Requested scheduler was not registered");
   }
