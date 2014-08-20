@@ -125,11 +125,11 @@ class ThreadLevelQueue : public AbstractTaskScheduler,
       std::shared_ptr<Task> task = nullptr;
       if (_runQueue.try_pop(task)) {
         retries = 0;
-        _blocked = true;
+        //_blocked = true;
         (*task)();
         LOG4CXX_DEBUG(_logger, "Executed task " << task->vname());
         task->notifyDoneObservers();
-        _blocked = false;
+        //_blocked = false;
       } else {
         if (retries++ < 10000) {
           if (retries > 300)

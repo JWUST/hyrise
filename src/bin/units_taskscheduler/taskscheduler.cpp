@@ -30,12 +30,11 @@ using ::testing::ValuesIn;
 
 // list schedulers to be tested
 std::vector<std::string> getSchedulersToTest() {
-  return {
-      "WSThreadLevelQueuesScheduler",     "ThreadLevelQueuesScheduler",           "CoreBoundQueuesScheduler",
-      "WSCoreBoundQueuesScheduler",       
-        "CentralScheduler",
-
-           "NodeBoundQueuesScheduler",             "WSNodeBoundQueuesScheduler"};
+    return {
+    "WSThreadLevelPriorityQueuesScheduler", "ThreadLevelPriorityQueuesScheduler",
+      "CoreBoundPriorityQueuesScheduler", "WSCoreBoundPriorityQueuesScheduler",
+      "CentralPriorityScheduler",       "DynamicPriorityScheduler",
+      "NodeBoundPriorityQueuesScheduler", "WSNodeBoundPriorityQueuesScheduler"};
 }
  /*
   return {

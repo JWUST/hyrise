@@ -43,11 +43,11 @@ class ThreadLevelQueuesScheduler : public AbstractTaskScheduler,
     size_t q = getNextQueue();
     // simple strategy to avoid blocking of queues; check if queue is blocked - try a couple of times, otherwise
     // schedule on next queue
-    size_t retries = 0;
+    /*size_t retries = 0;
     while (_queues[q]->blocked() && retries < 100) {
       q = getNextQueue();
       ++retries;
-    }
+      }*/
     _queues[q]->schedule(task);
   }
 
